@@ -89,7 +89,7 @@ if not os.path.exists(model_dir):
 params['model_dir'] = model_dir
 
 # save parameters
-with open(os.path.join(model_dir, params['model_name'] + '.params'), 'w') as param_file:
+with open(os.path.join(model_dir, params['model_name'] + '.params'), 'w', encoding='utf-8') as param_file:
     for key, parameter in params.items():
         param_file.write("{}: {}".format(key, parameter) + "\n")
         print((key, parameter))

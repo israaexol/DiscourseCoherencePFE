@@ -66,11 +66,11 @@ class LSTMParSeq(nn.Module):
                 packed_input = pack_padded_sequence(seq_tensor, input_lengths[i][j], batch_first=True)
                 packed_output, (ht, ct) = self.word_lstm(packed_input, self.word_lstm_hidden)
                 # reorder
-                final_output = ht[-1]
+                final_output = ht[-1] #a verifier
                 odx = original_index[i][j].view(-1, 1).expand(len(input_lengths[i][j]), final_output.size(-1))
                 output_unsorted = torch.gather(final_output, 0, Variable(odx))
                 # LSTM to produce paragraph vector from sentence vectors
-                output_unsorted = output_unsorted.unsqueeze(1)
+                output_unsorted = output_unsorted.unsqueeze(1) #this is to get every sentence representation on its own in the tensor
                 self.sent_lstm_hidden = self.init_hidden(output_unsorted.size(1)) # batch size 1
                 output_pars, (ht, ct) = self.sent_lstm(output_unsorted, self.sent_lstm_hidden)
                 final_output = ht[-1]

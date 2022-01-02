@@ -28,7 +28,7 @@ class Data(object):
 
     def read_orig_doc(self, filename, data_type, for_clique):
         sentences = []
-        with open(filename, "r") as in_file:
+        with open(filename, "r", encoding='utf-8') as in_file:
             for line in in_file:
                 line = line.strip()
                 if data_type == "BL":
@@ -44,7 +44,7 @@ class Data(object):
 
     def read_perm_doc(self, filename, sentences, data_type, for_clique):
         sentence_indices = []
-        with open(filename, "r") as in_file:
+        with open(filename, "r", encoding='utf-8') as in_file:
             for line in in_file:
                 line = line.strip()
                 if data_type == "BL":
@@ -70,7 +70,7 @@ class Data(object):
         if self.word_embeds is None and split == "train":
             add_new_words = True
         filename = corpus + '_' + split + '.csv'
-        with open(params['data_dir'] + corpus + '/' + filename,'r') as in_file:
+        with open(params['data_dir'] + corpus + '/' + filename,'r', encoding='utf-8') as in_file:
             reader = csv.DictReader(in_file)
             for row in reader:
                 text = row['text']
@@ -145,7 +145,7 @@ class Data(object):
         # get list of files in this split
         filename = corpus + '_' + split + '_perm.csv'
         text_ids = []
-        with open(params['data_dir'] + corpus + '/' + filename, 'r') as in_file:
+        with open(params['data_dir'] + corpus + '/' + filename, 'r', encoding='utf-8') as in_file:
             reader = csv.DictReader(in_file)
             for row in reader:
                 text_ids.append(row['text_id'])
@@ -335,7 +335,7 @@ class Data(object):
         print("\nLoading vectors:")
         if self.params['vector_type'] == 'glove':
             data = []
-            for line in open(self.params['vector_path']):
+            for line in open(self.params['vector_path'], encoding='utf-8'):
                 tokens = line.split()
                 if len(tokens) != 301:
                     continue

@@ -7,7 +7,7 @@ if not os.path.exists(text_dir):
     os.makedirs(text_dir)
 splits = ['train', 'test']
 for split in splits:
-    with open(corpus_dir + corpus + '_' + split + '.csv','r') as in_file:
+    with open(corpus_dir + corpus + '_' + split + '.csv','r', encoding='utf-8') as in_file:
         reader = csv.DictReader(in_file)
         for row in reader:
             text_id = row['text_id']
