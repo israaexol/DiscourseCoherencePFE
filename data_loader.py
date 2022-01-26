@@ -73,10 +73,22 @@ class Data(object):
         with open(params['data_dir'] + corpus + '/' + filename,'r', encoding='utf-8') as in_file:
             reader = csv.DictReader(in_file)
             for row in reader:
+                row_dict = {}
+                for key, value in row.items():
+                    keyAscii = key.encode('ascii', 'ignore' ).decode()
+                    valueAscii = value.encode('ascii','ignore').decode()
+                    row_dict[keyAscii] = valueAscii
+                row = row_dict
+                # print("==============row=================")
+                # print(row)
                 text = row['text']
+                # print("=================TEXT===================")
+                # print(text)
                 if not self.params['case_sensitive']:
                     text = text.lower()
                 text_id = row['text_id']
+                # print("=================TEXT ID==================")
+                # print(text_id)
                 if params['task'] == 'score_pred':
                     labels = [int(row['ratingA1']), int(row['ratingA2']), int(row['ratingA3'])]
                     label = np.mean(labels)
@@ -113,7 +125,7 @@ class Data(object):
                             idx = self.add_token_to_index(token, add_new_words)
                             sent_idx.append(idx)
                         doc.index_sentences.append(sent_idx)
-                elif params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq':
+                elif params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel':
                     doc = DocumentWithParagraphs(text, label, id=text_id)
                     # index words
                     doc_indexed = []
@@ -402,7 +414,7 @@ class Data(object):
                 batch.append([])
         for idx in indices:
             batch_labels.append(labels[idx])
-            if model_type == 'sent_avg' or model_type == 'par_seq':
+            if model_type == 'sent_avg' or model_type == 'par_seq' or model_type =='sem_rel':
                 batch.append(data[idx])
             elif model_type == 'clique':
                 for i in range(clique_size):
@@ -424,7 +436,7 @@ class Data(object):
         return new_data_list
 
     def pad_to_batch(self, batch, word_to_idx, model_type, clique_size=0):  # batch is list of (sequence, label)
-        if model_type == 'par_seq':
+        if model_type == 'par_seq' or model_type == 'sem_rel':
             input_var = []
             input_len = []
             reverse_index = []

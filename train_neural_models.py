@@ -7,6 +7,11 @@ from evaluation import *
 import progressbar
 from torch.optim.lr_scheduler import LambdaLR
 from torch.optim.lr_scheduler import StepLR
+import matplotlib.pyplot as plt
+from sklearn import linear_model
+from sklearn.utils import class_weight
+from numpy import *
+import math
 USE_CUDA = torch.cuda.is_available()
 FloatTensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if USE_CUDA else torch.LongTensor
@@ -23,6 +28,11 @@ def train(params, training_docs, test_docs, data, model):
         training_data, training_labels, train_ids = data.create_doc_sents(training_docs, 'paragraph', params['task'],
                                                                           params['train_data_limit'])
         test_data, test_labels, test_ids = data.create_doc_sents(test_docs, 'paragraph', params['task'], params['train_data_limit'])
+    elif params['model_type']=='sem_rel':
+        training_data, training_labels, train_ids = data.create_doc_sents(training_docs, 'paragraph', params['task'],
+                                                                          params['train_data_limit'])
+        test_data, test_labels, test_ids = data.create_doc_sents(test_docs, 'paragraph', params['task'], params['train_data_limit'])
+
     if USE_CUDA:
         model.cuda()
     if params['train_data_limit'] != -1:
@@ -42,6 +52,9 @@ def train(params, training_docs, test_docs, data, model):
         loss_fn = torch.nn.MSELoss()
     timestamp = time.time()
     best_test_acc = 0
+    #test_acc_tab=[]
+    #test_ep_tab=[]
+
     for epoch in range(params['num_epochs']):
         if params['lr_decay'] == 'lambda' or params['lr_decay'] == 'step':
             scheduler.step()
@@ -58,25 +71,77 @@ def train(params, training_docs, test_docs, data, model):
             sentences, orig_batch_labels = data.get_batch(training_data, training_labels, batch_ind, params['model_type'], params['clique_size'])
             batch_padded, batch_lengths, original_index = data.pad_to_batch(sentences, data.word_to_idx, params['model_type'], params['clique_size'])
             model.zero_grad()
-            pred_coherence = model(batch_padded, batch_lengths, original_index)
-            if params['task'] == 'score_pred':
-                loss = loss_fn(pred_coherence, Variable(FloatTensor(orig_batch_labels)))
-            else:
-                loss = loss_fn(pred_coherence, Variable(LongTensor(orig_batch_labels)))
+            if params['model_type']== 'sem_rel':
+                batch_data_frame= model(batch_padded, batch_lengths, original_index)
+                X = batch_data_frame[['sent','par']]
+                print("========================= X ==========================")
+                print(X)
+                Y = orig_batch_labels
+                print("============================ Y ==========================")
+                print(Y)
+                regr = linear_model.LinearRegression()
+                regr.fit(X, Y)
+                print("========================= regr ==========================")
+                print(regr)
+                reg_prediction = regr.predict(X)
+                print("========================= reg_prediction ==========================")
+                print(reg_prediction)
+                reg_prediction = torch.from_numpy(reg_prediction)
+                print("========================= reg_prediction transformed into tensor ==========================")
+                print(reg_prediction)
+                reg_prediction = reg_prediction.unsqueeze(1)
+                reg_prediction= F.softmax(reg_prediction, dim=0)
+                print("========================= reg_prediction softmax ==========================")
+                print(reg_prediction)
+                print("============================ Y ==========================")
+                print(Y)
+                Y = np.array(Y)
+                class_weights=class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(Y),y= Y)
+                print("===================== Class weights ==========================")
+                print(class_weights)
+                class_weights = torch.from_numpy(class_weights)
+                # class_weights= class_weights.unsqueeze(1)
+                # print("===================== Class weights  unsequeeze==========================")
+                # print(class_weights)
+                loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
+                loss = loss_fn(reg_prediction, Variable(LongTensor(orig_batch_labels)))
+            else: 
+                pred_coherence, avg_deg_train= model(batch_padded, batch_lengths, original_index)
+                if params['task'] == 'score_pred':
+                    loss = loss_fn(pred_coherence, Variable(FloatTensor(orig_batch_labels)))
+                else:
+                    loss = loss_fn(pred_coherence, Variable(LongTensor(orig_batch_labels)))
             mean_loss = loss / params["batch_size"]
             mean_loss.backward()
             total_loss += loss.cpu().data.numpy()
             optimizer.step()
         current_time = time.time()
         print("Time %-5.2f min" % ((current_time - timestamp) / 60.0))
-        print("Train loss: " + str(total_loss[0]))
+        print("Train loss: " + str(total_loss))
         output_name = params['model_name'] + '_epoch' + str(epoch)
-        if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq':
+        if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel':
             if params['task'] == 'minority':
                 test_f05, test_precision, test_recall, test_loss = eval_docs(model, loss_fn, test_data, test_labels,
                                                                         data, params)
+            elif params['model_type']== 'sem_rel':
+                test_accuracy, test_loss = eval_docs(model, loss_fn, test_data, test_labels, data, params)                                
             elif params['task'] == 'class' or params['task'] == 'score_pred':
-                test_accuracy, test_loss = eval_docs(model, loss_fn, test_data, test_labels, data, params)
+                test_accuracy, test_loss, global_eval_pred, global_avg_deg_test = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
+
+                print("=========== GLOBAL EVAL PRED ===================")
+                print(global_eval_pred)
+                print("=========== GLOBAL EVAL PRED SIZE ===================")
+                print(len(global_eval_pred))
+                print("=========== GLOBAL AVG DEG ===================")
+                print(global_avg_deg_test)
+                print("=============================GLOBAL AVG DEG TEST SIZE ====================")
+                print(len(global_avg_deg_test))
+                # plt.scatter(global_avg_deg_test, global_eval_pred)
+                # plt.title('EPOCH N°' + str(epoch))
+                # plt.xlabel('Cosine similarity')
+                # plt.ylabel('Scores de cohérence')
+                # plt.show()
+
             elif params['task'] == 'perm':
                 test_accuracy, test_loss = eval_docs_rank(model, test_docs, data, params)
             print("Test loss: %0.3f" % test_loss)
@@ -126,6 +191,8 @@ def train(params, training_docs, test_docs, data, model):
                 torch.save(model.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best')
                 print('saved model ' + params['model_dir'] + '/' + params['model_name'] + '_best')
         print()
+        print("==================== BEST TEST ACCURACY =================================")
+        print(best_test_acc)
     return best_test_acc
 
 

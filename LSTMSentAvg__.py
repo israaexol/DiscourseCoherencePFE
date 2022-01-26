@@ -15,7 +15,7 @@ class LSTMSentAvg(nn.Module):
 
     def __init__(self, params, data_obj):
         super(LSTMSentAvg, self).__init__()
-        sys.stdout = open('sentavg_GCDC_all_class_cos.txt', 'w')
+        sys.stdout = open('sentavg_logs_yelp_class_sim.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']
@@ -75,41 +75,31 @@ class LSTMSentAvg(nn.Module):
             output_unsorted = torch.gather(final_output, 0, Variable(odx))
 
             # 1. Faire une boucle sur le nombre de phrase dans un document, telle que dans chaque
-            # itération on calcule le vecteur f entre 2 phrases adjacentes
-            # print('========================= output sorted ====================')
-            # print(output_unsorted)
+            # sitération on calcule le vecteur f entre 2 phrases adjacentes
             size = list(output_unsorted.size())
-            print("================= SIZE ===============")
+            print("=================SIZE===============")
             print(size)
 
-            # 2. calculer les degrès de continuité entre les fi du tensor précedent et construire un vecteur qui les regroupent.
+            # 3. calculer les degrès de continuité entre les fi du tensor précedent et construire un vecteur qui les regroupent.
             deg_vec = []
-
-            if(size[0]==1):
-                deg_vec.append(1)
-            else:
-                for i in range(size[0] - 1):
-                    deg = nn.CosineSimilarity(dim=0, eps=1e-8)(output_unsorted[i], output_unsorted[i+1])
-                    deg = deg.detach().numpy().item()
-                    print("========================= deg  =======================")
-                    print(deg)
-                    # vecteur de degrés de continuité
-                    deg_vec.append(deg)
+           
+            for i in range(size[0] - 1):
+                deg = torch.matmul(output_unsorted[i], output_unsorted[i+1])
+                # prevent big values
+                deg = torch.div(deg, size[1])
+                deg = torch.nn.LeakyReLU(-1.0)(deg)
+                deg = deg.detach().numpy().item()
+                print("========================= deg  =======================")
+                print(deg)
+                # vecteur de degrés de continuité
+                deg_vec.append(deg)
             print("========================= deg vec =======================")
             print(deg_vec)
             # Padding the deg vec
             # calculate the avg of the deg vector of one document
-            
             if(len(deg_vec) > 0):
                 avg_deg= sum(deg_vec)/len(deg_vec)
                 global_avg_deg.append(avg_deg)
-            
-            
-            print("==================Global avg deg=====================")
-            print(global_avg_deg)
-                
-            #global_avg_deg += deg_vec
-            
             pad_deg = np.zeros(self.max_len)
             deg_vec = np.array(deg_vec)
             pad_deg[:deg_vec.size] = deg_vec

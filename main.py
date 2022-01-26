@@ -1,12 +1,18 @@
+
 import argparse
 import sys
 from data_loader import *
 from LSTMClique import LSTMClique
 from LSTMSentAvg import LSTMSentAvg
 from LSTMParSeq import LSTMParSeq
+from LSTMSemRel import LSTMSemRel
 from train_neural_models import *
+# import matplotlib.pyplot as plt
+# from numpy import *
+# import math
 
-sys.path.insert(0,os.getcwd())
+
+sys.path.insert(0, os.getcwd())
 
 dirname, filename = os.path.split(os.path.abspath(__file__))
 root_dir = "/".join(dirname.split("/")[:-1])
@@ -16,32 +22,42 @@ run_dir = os.path.join(root_dir, "runs")
 parser = argparse.ArgumentParser()
 
 # data
-parser.add_argument("--task", type=str, default="class")  # class [classification], perm [binary permutation], score_pred [mean score prediction], minority [minority binary classification]
+# class [classification], perm [binary permutation], score_pred [mean score prediction], minority [minority binary classification]
+parser.add_argument("--task", type=str, default="class")
 
 # model params
-parser.add_argument("--model_type", type=str, default="clique") # clique, doc_seq
-parser.add_argument("--learning_rate", type=float, default=0.001)
+parser.add_argument("--model_type", type=str,
+                    default="clique")  # clique, doc_seq
+parser.add_argument("--learning_rate", type=float, default=0.0001)
 parser.add_argument("--dropout", type=float, default=0)
 parser.add_argument("--lstm_dim", type=int, default=100)
-parser.add_argument("--hidden_dim", type=int, default=200, help="hidden layer dimension")
-parser.add_argument("--clique", type=int, default=3) # number of sentences in each clique (clique model only)
+parser.add_argument("--hidden_dim", type=int, default=200,
+                    help="hidden layer dimension")
+# number of sentences in each clique (clique model only)
+parser.add_argument("--clique", type=int, default=3)
 parser.add_argument("--l2_reg", type=float, default=0)
 
 # training
 parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--num_epochs", type=int, default=10)
-parser.add_argument("--train_data_limit", type=int, default=-1) # for debugging with subset of data
+# for debugging with subset of data
+parser.add_argument("--train_data_limit", type=int, default=-1)
 parser.add_argument("--lr_decay", type=str, default="none")
 
 # vectors
-parser.add_argument("--vector_type", default="glove", help="specify vector type glove/word2vec/none")
-parser.add_argument("--glove_path", type=str, default="data/GloVe/glove.840B.300d.txt")
-parser.add_argument("--embedding_dim", type=int, default=300, help="vector dimension")
-parser.add_argument("--case_sensitive", action="store_true", help="activate this flag if vectors are case-sensitive (don't lower-case the data)")
+parser.add_argument("--vector_type", default="glove",
+                    help="specify vector type glove/word2vec/none")
+parser.add_argument("--glove_path", type=str,
+                    default="data/GloVe/glove.840B.300d.txt")
+parser.add_argument("--embedding_dim", type=int,
+                    default=300, help="vector dimension")
+parser.add_argument("--case_sensitive", action="store_true",
+                    help="activate this flag if vectors are case-sensitive (don't lower-case the data)")
 
 # per-experiment settings
 parser.add_argument("--model_name", type=str)
-parser.add_argument("--data_dir", default="data/", help="path to the data directory")
+parser.add_argument("--data_dir", default="data/",
+                    help="path to the data directory")
 parser.add_argument("--train_corpus", type=str)
 parser.add_argument("--test_corpus", type=str)
 
@@ -120,7 +136,11 @@ if params['model_type'] == 'clique':
     train(params, training_docs, test_docs, data, model)
 elif params['model_type'] == 'sent_avg':
     model = LSTMSentAvg(params, data)
-    train(params, training_docs, test_docs, data, model)
+    best_test_acc = train(params, training_docs, test_docs, data, model)
+   
 elif params['model_type'] == 'par_seq':
     model = LSTMParSeq(params, data)
+    train(params, training_docs, test_docs, data, model)
+elif params['model_type'] == 'sem_rel':
+    model = LSTMSemRel(params, data)
     train(params, training_docs, test_docs, data, model)
