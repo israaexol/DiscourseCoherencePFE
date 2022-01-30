@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn import linear_model
 
+
 USE_CUDA = torch.cuda.is_available()
 FloatTensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if USE_CUDA else torch.LongTensor
@@ -17,7 +18,7 @@ class LSTMSemRel(nn.Module):
 
     def __init__(self, params, data_obj):
         super(LSTMSemRel, self).__init__()
-        sys.stdout = open('semrel_GCDC_class.txt', 'w')
+        sys.stdout = open('semrel_GCDC_class_balanced2.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']
@@ -37,7 +38,7 @@ class LSTMSemRel(nn.Module):
         elif params['task'] == 'minority':
             num_labels = 2
         elif params['task'] == 'class':
-            num_labels = 1#3
+            num_labels = 3
         elif params['task'] == 'score_pred':
             num_labels = 1
         self.max_len = 50  # used for padding
@@ -60,7 +61,7 @@ class LSTMSemRel(nn.Module):
             return (Variable(torch.zeros(1, batch_size, self.lstm_dim)),
                     Variable(torch.zeros(1, batch_size, self.lstm_dim)))
 
-    def forward(self, inputs, input_lengths, original_index):
+    def forward(self, inputs, input_lengths, original_index, weights=None):
         doc_vecs = None
         print("executing forward in lstmsemRel")
         #global cosine similarty vectors for sentences
@@ -92,9 +93,9 @@ class LSTMSemRel(nn.Module):
                 output_unsorted = torch.gather(final_output, 0, Variable(odx))
 
                 sentences_from_doc = torch.cat([sentences_from_doc, output_unsorted],dim=0)
-                print("=========== Sentences from doc =================")
-                print(type(sentences_from_doc))
-                print(sentences_from_doc)
+                # print("=========== Sentences from doc =================")
+                # print(type(sentences_from_doc))
+                # print(sentences_from_doc)
                 # get paragraphs
                 
                 output_unsorted = output_unsorted.unsqueeze(1) #this is to get every sentence representation on its own in the tensor
@@ -112,8 +113,8 @@ class LSTMSemRel(nn.Module):
             # 2. calculate cosine similarities between sentences
 
             sent_size = list(sentences_from_doc.size())
-            print("==================Sentences size ==================")
-            print(sent_size)
+            # print("==================Sentences size ==================")
+            # print(sent_size)
             cosineSim_sent_doc = []
 
             if(sent_size[0]==1):
@@ -136,9 +137,9 @@ class LSTMSemRel(nn.Module):
             cosineSim_sent_doc = np.array(cosineSim_sent_doc)
             pad_cosine[:cosineSim_sent_doc.size] = cosineSim_sent_doc
             global_cosine_sent.append(pad_cosine)
-            print("=========== Global cosine sent =================")
-            print(type(global_cosine_sent))
-            print(global_cosine_sent)
+            # print("=========== Global cosine sent =================")
+            # print(type(global_cosine_sent))
+            # print(global_cosine_sent)
             ###############################################################################
                        
             # PARAGRAPH LEVEL :
@@ -159,8 +160,8 @@ class LSTMSemRel(nn.Module):
                     cosine_par = cosine_par.detach().numpy().item()
                     # vecteur de degrés de continuité d'un seul document
                     cosineSim_par_doc.append(cosine_par)
-            print("================Cosine sim par doc=============")
-            print(cosineSim_par_doc)
+            # print("================Cosine sim par doc=============")
+            # print(cosineSim_par_doc)
             # avg of deg of continuity of one doc 
             if(len(cosineSim_par_doc) > 0): # vecteur de degrés de continuité d'un seul document
                 avg_cosine = sum(cosineSim_par_doc)/len(cosineSim_par_doc) # avg of deg of continuity of one doc 
@@ -172,8 +173,8 @@ class LSTMSemRel(nn.Module):
             cosineSim_par_doc = np.array(cosineSim_par_doc)
             pad_cosine_par[:cosineSim_par_doc.size] = cosineSim_par_doc
             global_cosine_par.append(pad_cosine_par)
-            print("=========== Global cosine par =================")
-            print(type(global_cosine_par))
+            # print("=========== Global cosine par =================")
+            # print(type(global_cosine_par))
             print(global_cosine_par)
         # Prediction for Sentences
 
@@ -181,42 +182,76 @@ class LSTMSemRel(nn.Module):
         global_cosine_sent  = global_cosine_sent.squeeze(1)
         global_vectors_sent = F.dropout(self.bn(F.relu(self.hidden_layer(global_cosine_sent))), p=self.dropout, training=self.training)
         coherence_pred_sent = self.predict_layer(global_vectors_sent)
-        print("===========  Coherence pred sentences =================")
-        print(type(coherence_pred_sent))
-        print(coherence_pred_sent)
-
+        # print("===========  Coherence pred sentences =================")
+        # print(type(coherence_pred_sent))
+        # print(coherence_pred_sent)
+        coherence_pred_sent = F.softmax(coherence_pred_sent, dim=0)
+        coherence_pred_sentTensor = coherence_pred_sent
+        # print("===========  Coherence pred sentences softmax =================")
+        # print(type(coherence_pred_sent))
+        # print(coherence_pred_sent)
+        # sent_coh = torch.argmax(coherence_pred_sent, dim=1)
+        # print("===========  sent coh =================")
+        # print(type(sent_coh))
+        # print(sent_coh)
         ######################################################
-
         # Prediction for paragraphes 
 
         global_cosine_par = torch.FloatTensor(global_cosine_par)
         global_cosine_par = global_cosine_par.squeeze(1)
         global_vectors_par = F.dropout(self.bn(F.relu(self.hidden_layer(global_cosine_par))), p=self.dropout, training=self.training)
         coherence_pred_par = self.predict_layer(global_vectors_par)
-        print("===========  Coherence pred paragraphs =================")
-        print(type(coherence_pred_par))
-        print(coherence_pred_par)
-        # Linear layer for prediction weightage 
-        coherence_pred_sent = coherence_pred_sent.flatten().tolist()
-        coherence_pred_par = coherence_pred_par.flatten().tolist()
-        print("===========  Coherence pred paragraphs =================")
-        print(type(coherence_pred_par))
-        print(coherence_pred_par)
+        # print("===========  Coherence pred paragraphs =================")
+        # print(type(coherence_pred_par))
+        # print(coherence_pred_par)
+        coherence_pred_par = F.softmax(coherence_pred_par, dim=0)
+        coherence_pred_parTensor = coherence_pred_par
+        # print("===========  Coherence pred paragraphs softmax =================")
+        # print(type(coherence_pred_par))
+        # print(coherence_pred_par)
+        coherence_pred_sent = coherence_pred_sent.tolist()
+        coherence_pred_par = coherence_pred_par.tolist()
+        # print("===========  Coherence pred par list =================")
+        # print(type(coherence_pred_par))
+        # print(coherence_pred_par)
 
-        print("===========  Coherence pred sentences =================")
-        print(type(coherence_pred_sent))
-        print(coherence_pred_sent)
-        coherence = {'sent' : coherence_pred_sent, 'par': coherence_pred_par}
-        coh_dataframe = pd.DataFrame(coherence)
+        # print("===========  Coherence pred sent list =================")
+        # print(type(coherence_pred_sent))
+        # print(coherence_pred_sent)
+        
+        # par_coh = torch.argmax(coherence_pred_par, dim=1)
+        # print("===========  par coh =================")
+        # print(type(par_coh))
+        # print(par_coh)
+        # Linear layer for prediction weightage 
+        # coherence_pred_sent = sent_coh.tolist()
+        # coherence_pred_par = par_coh.tolist()
+        # print("===========  Coherence pred par =================")
+        # print(type(coherence_pred_par))
+        # print(coherence_pred_par)
+
+        # print("===========  Coherence pred sent =================")
+        # print(type(coherence_pred_sent))
+        # print(coherence_pred_sent)
+        # coherence = {'sent' : coherence_pred_sent, 'par': coherence_pred_par}
+        # coh_dataframe = pd.DataFrame(coherence)
        
         
-        print("===========  Coherence dataframe =================")
-        print(type(coh_dataframe))
-        print(coh_dataframe)
+        # print("===========  Coherence dataframe =================")
+        # print(type(coh_dataframe))
+        # print(coh_dataframe)
         
         #X = 
         # Final prediction 
         # if self.task != 'score_pred':
         #     final_coherence_pred = F.softmax(final_coherence_pred, dim=0)
-        return coh_dataframe
+        if(weights is None):
+            return coherence_pred_sent, coherence_pred_par
+        else:
+            coherence_pred_sent = torch.mul(coherence_pred_sentTensor, weights[0])
+            coherence_pred_par = torch.mul(coherence_pred_parTensor, weights[1])
+            final_prediction = coherence_pred_sent.add(coherence_pred_par)
+            print("=========== final predictions ==================")
+            print(final_prediction)
+            return final_prediction
            

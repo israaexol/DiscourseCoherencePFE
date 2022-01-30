@@ -136,6 +136,8 @@ Train 3-class classification model on Yahoo data:
 ```
 python3 main.py --model_name yahoo_class_model --train_corpus Yahoo --model_type par_seq --task class
 ```
+python main.py --model_name semrel_class_model --train_corpus GCDC_min --model_type sem_rel --task class
+
 See main.py for other parameters.
 
 **Note:** the ParSeq model currently cannot be trained for the binary permutation ranking task.

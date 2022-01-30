@@ -10,6 +10,23 @@ from sklearn import metrics
 from sklearn import linear_model
 import torch.nn.functional as F
 from sklearn.utils import class_weight
+from numpy import mean
+from numpy import std
+from numpy import argmax
+from numpy import tensordot
+from numpy.linalg import norm
+from itertools import product
+from sklearn.metrics import accuracy_score
+
+# normalize a vector to have unit norm
+def normalize(weights):
+	# calculate l1 vector norm
+	result = norm(weights, 1)
+	# check for a vector of all zeros
+	if result == 0.0:
+		return weights
+	# return normalized vector (unit norm)
+	return weights / result
 
 def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
     steps = int(len(eval_data) / params['batch_size'])
@@ -21,6 +38,9 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
     global_avg_deg_test = []
     global_eval_pred = []
     global_eval_labels=[]
+    best_weights = None
+    best_score = 0
+    w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     loss = 0
     model.eval()
     for step in range(steps):
@@ -32,27 +52,62 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
         batch_padded, batch_lengths, original_index = data_obj.pad_to_batch(
             sentences, data_obj.word_to_idx, params['model_type'])
         if params['model_type']== 'sem_rel':
-            batch_coh_pred = model(batch_padded, batch_lengths, original_index)
-            X = batch_coh_pred[['sent','par']] 
-            Y = orig_batch_labels
-            regr = linear_model.LinearRegression()
-            regr.fit(X, Y)
-            reg_prediction = regr.predict(X)
-            reg_prediction = torch.from_numpy(reg_prediction)
-            reg_prediction = reg_prediction.unsqueeze(1)
-            reg_prediction= F.softmax(reg_prediction, dim=0)
+            y_pred = []
+            test_pred_sent, test_pred_par = model(batch_padded, batch_lengths, original_index)
+            #gather coherence predictions into one array
+            y_pred.append(test_pred_sent)
+            y_pred.append(test_pred_par)
+            y_pred = np.array(y_pred)
+            print("=============== Y_PRED =====================")
+            print(y_pred)
+            # define weights to consider
+            # iterate all possible combinations (cartesian product)
+            for weights in product(w, repeat=2):
+                # skip if all weights are equal
+                if len(set(weights)) == 1:
+                    continue
+                # hack, normalize weight vector
+                weights = normalize(weights)
+                # evaluate weights
+                # weighted sum across ensemble members
+                summed = tensordot(y_pred, weights, axes=((0),(0)))
+                print("================summed===================")
+                print(summed)
+                # argmax across classes
+                result = argmax(summed, axis=1)
+                print("================result===================")
+                print(result)
+                # calculate accuracy
+                score = accuracy_score(orig_batch_labels, result)
+                print("====================score==================")
+                print(score)
+                #score = evaluate_ensemble(members, weights, testX, testy)
+                if score > best_score:
+                    best_score = score
+                    best_weights = weights
+                    print("best_weights")
+                    best_weights = list(best_weights)
+                    print(best_weights)
+            final_pred = model(batch_padded, batch_lengths, original_index, weights=best_weights)
+            # class_weights = class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(Y),y= Y)
+            # print("===================== Class weights ==========================")
+            # print(class_weights)
+            # classWeight = {0: class_weights[0], 1: class_weights[1], 2: class_weights[2]}
+            # print("===================== Class weights dictionary ==========================")
+            # print(classWeight)
             
-            print("===========Reg prediction==============")
-            print(reg_prediction)
+            
+            #loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
+            #loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
             eval_labels.extend(orig_batch_labels)
-            # Y = Y.squeeze(1)
-            Y = np.array(Y)
-            class_weights=class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(Y),y= Y)
-            class_weights = torch.from_numpy(class_weights)
-            #class_weights= class_weights.unsqueeze(1)
+            
+            class_weights = class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(orig_batch_labels),y= orig_batch_labels)
+            print("===================== Class weights ==========================")
+            print(class_weights)
+            class_weights = torch.tensor(class_weights, dtype=torch.float)
             loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
-            loss += loss_fn(reg_prediction, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
-            eval_pred.extend(list(np.argmax(reg_prediction.cpu().data.numpy())), axis=1)
+            loss += loss_fn(final_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
+            eval_pred.extend(list(np.argmax(final_pred.cpu().data.numpy(), axis=1)))
             
         else:
             batch_pred, avg_deg_test = model(batch_padded, batch_lengths, original_index)
@@ -82,6 +137,10 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
     elif params['task'] == 'minority':
         f05, precision, recall = evaluate(eval_pred, eval_labels, "f05")
     else:
+        print("============Eval pred============")
+        print(eval_pred)
+        print("============Eval labels============")
+        print(eval_labels)
         accuracy, num_correct, num_total = evaluate(eval_pred, eval_labels, "accuracy")
         print("============Accuracy============")
         print(accuracy)

@@ -12,27 +12,10 @@ from sklearn import linear_model
 from sklearn.utils import class_weight
 from numpy import *
 import math
-from numpy import mean
-from numpy import std
-from numpy import argmax
-from numpy import tensordot
-from numpy.linalg import norm
-from itertools import product
-from sklearn.metrics import accuracy_score
-
 USE_CUDA = torch.cuda.is_available()
 FloatTensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if USE_CUDA else torch.LongTensor
 
-# normalize a vector to have unit norm
-def normalize(weights):
-	# calculate l1 vector norm
-	result = norm(weights, 1)
-	# check for a vector of all zeros
-	if result == 0.0:
-		return weights
-	# return normalized vector (unit norm)
-	return weights / result
 
 def train(params, training_docs, test_docs, data, model):
     if params['model_type'] == 'clique':
@@ -71,9 +54,7 @@ def train(params, training_docs, test_docs, data, model):
     best_test_acc = 0
     #test_acc_tab=[]
     #test_ep_tab=[]
-    best_weights = None
-    best_score = 0
-    w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+
     for epoch in range(params['num_epochs']):
         if params['lr_decay'] == 'lambda' or params['lr_decay'] == 'step':
             scheduler.step()
@@ -86,7 +67,6 @@ def train(params, training_docs, test_docs, data, model):
         bar = progressbar.ProgressBar()
         model.train()
         for step in bar(range(steps)):
-
             batch_ind = indices[(step * params["batch_size"]):((step + 1) * params["batch_size"])]
             sentences, orig_batch_labels = data.get_batch(training_data, training_labels, batch_ind, params['model_type'], params['clique_size'])
             print("==============ORIG BATCH LABELS==============")
@@ -94,54 +74,45 @@ def train(params, training_docs, test_docs, data, model):
             batch_padded, batch_lengths, original_index = data.pad_to_batch(sentences, data.word_to_idx, params['model_type'], params['clique_size'])
             model.zero_grad()
             if params['model_type']== 'sem_rel':
-                y_pred = []
-                coherence_pred_sent, coherence_pred_par = model(batch_padded, batch_lengths, original_index)
-                #gather coherence predictions into one array
-                y_pred.append(coherence_pred_sent)
-                y_pred.append(coherence_pred_par)
-                y_pred = np.array(y_pred)
-                print("=============== Y_PRED =====================")
-                print(y_pred)
-                # define weights to consider
-                # iterate all possible combinations (cartesian product)
-                for weights in product(w, repeat=2):
-                    # skip if all weights are equal
-                    if len(set(weights)) == 1:
-                        continue
-                    # hack, normalize weight vector
-                    weights = normalize(weights)
-                    # evaluate weights
-                    # weighted sum across ensemble members
-                    summed = tensordot(y_pred, weights, axes=((0),(0)))
-                    # print("================summed===================")
-                    # print(summed)
-                    # argmax across classes
-                    result = argmax(summed, axis=1)
-                    print("================result===================")
-                    print(result)
-                    # calculate accuracy
-                    score = accuracy_score(orig_batch_labels, result)
-                    print("====================score==================")
-                    print(score)
-                    #score = evaluate_ensemble(members, weights, testX, testy)
-                    if score > best_score:
-                        best_score = score
-                        best_weights = weights
-                        best_weights = list(best_weights)
-                        print("best_weights")
-                        print(best_weights)
-                final_pred = model(batch_padded, batch_lengths, original_index, weights=best_weights)
-                class_weights = class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(orig_batch_labels),y= orig_batch_labels)
+                batch_data_frame= model(batch_padded, batch_lengths, original_index)
+                X = batch_data_frame[['sent','par']]
+                print("========================= X ==========================")
+                print(X)
+                Y = orig_batch_labels
+                print("============================ Y ==========================")
+                print(Y)
+                class_weights = class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(Y),y= Y)
                 print("===================== Class weights ==========================")
                 print(class_weights)
-                class_weights = torch.tensor(class_weights, dtype=torch.float)
-                # classWeight = {0: class_weights[0], 1: class_weights[1], 2: class_weights[2]}
-                # print("===================== Class weights dictionary ==========================")
-                # print(classWeight)
+                classWeight = {0: class_weights[0], 1: class_weights[1], 2: class_weights[2]}
+                print("===================== Class weights dictionary ==========================")
+                print(classWeight)
+                regr = linear_model.LogisticRegression(class_weight='balanced')
+                regr.fit(X, Y)
+                print("========================= regr ==========================")
+                print(regr)
+                reg_prediction = regr.predict(X)
+                print("========================= reg_prediction ==========================")
+                print(reg_prediction)
+                reg_prediction = reg_prediction.tolist()
+                #reg_prediction = torch.from_numpy(reg_prediction)
+                #reg_prediction = torch.LongTensor(reg_prediction)
+                print("========================= reg_prediction transformed into tensor ==========================")
+                print(Variable(LongTensor(reg_prediction)))
+                #reg_prediction = reg_prediction.unsqueeze(1)
+                # reg_prediction= F.softmax(reg_prediction, dim=0)
+                # print("========================= reg_prediction softmax ==========================")
+                # print(reg_prediction)
+                # print("============================ Y ==========================")
+                # print(Y)
+                # Y = np.array(Y)
                 
-               
-                loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
-                loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
+                #class_weights = torch.from_numpy(class_weights)
+                # class_weights= class_weights.unsqueeze(1)
+                # print("===================== Class weights  unsequeeze==========================")
+                # print(class_weights)
+                #loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
+                loss = loss_fn(Variable(LongTensor(reg_prediction)), Variable(LongTensor(orig_batch_labels)))
             else: 
                 pred_coherence, avg_deg_train= model(batch_padded, batch_lengths, original_index)
                 if params['task'] == 'score_pred':
