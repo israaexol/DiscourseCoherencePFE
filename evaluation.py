@@ -17,6 +17,7 @@ from numpy import tensordot
 from numpy.linalg import norm
 from itertools import product
 from sklearn.metrics import accuracy_score
+import sys
 
 # normalize a vector to have unit norm
 def normalize(weights):
@@ -89,34 +90,31 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
                     best_weights = list(best_weights)
                     print(best_weights)
             final_pred = model(batch_padded, batch_lengths, original_index, weights=best_weights)
-            # class_weights = class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(Y),y= Y)
-            # print("===================== Class weights ==========================")
-            # print(class_weights)
-            # classWeight = {0: class_weights[0], 1: class_weights[1], 2: class_weights[2]}
-            # print("===================== Class weights dictionary ==========================")
-            # print(classWeight)
-            
-            
-            #loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
-            #loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
             eval_labels.extend(orig_batch_labels)
             
-            class_weights = class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(orig_batch_labels),y= orig_batch_labels)
-            print("===================== Class weights ==========================")
-            print(class_weights)
-            class_weights = torch.tensor(class_weights, dtype=torch.float)
-            loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
+            # class_weights = class_weight.compute_class_weight(class_weight='balanced',classes= np.unique(orig_batch_labels),y= orig_batch_labels)
+            # print("===================== Class weights ==========================")
+            # print(class_weights)
+            # class_weights = torch.tensor(class_weights, dtype=torch.float)
+            # loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
             loss += loss_fn(final_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
             eval_pred.extend(list(np.argmax(final_pred.cpu().data.numpy(), axis=1)))
+        elif params['model_type']=='sem_rel_prod':
+            batch_pred = model(batch_padded, batch_lengths, original_index)
+
+            eval_labels.extend(orig_batch_labels)
+            
+            loss += loss_fn(batch_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
+            eval_pred.extend(list(np.argmax(batch_pred.cpu().data.numpy(), axis=1)))
             
         else:
             batch_pred, avg_deg_test = model(batch_padded, batch_lengths, original_index)
-            print("=========== BATCH PRED ===========")
-            print(batch_pred)
+            # print("=========== BATCH PRED ===========")
+            # print(batch_pred)
             global_avg_deg_test += avg_deg_test
             eval_labels.extend(orig_batch_labels)
-            print("=========== EVAL LABELS ===========")
-            print(eval_labels)
+            # print("=========== EVAL LABELS ===========")
+            # print(eval_labels)
             if params['task'] == 'score_pred':
                 loss += loss_fn(batch_pred, Variable(FloatTensor(orig_batch_labels))).cpu().data.numpy()
                 eval_pred.extend(list(batch_pred.cpu().data.numpy())) 
@@ -124,10 +122,10 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
             else:
                 loss += loss_fn(batch_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
                 eval_pred.extend(list(np.argmax(batch_pred.cpu().data.numpy(), axis=1)))
-                print("===============Eval pred size================")
-                print(len(eval_pred))
-                print("=========== EVAL PRED ===========")
-                print(eval_pred)
+                # print("===============Eval pred size================")
+                # print(len(eval_pred))
+                # print("=========== EVAL PRED ===========")
+                # print(eval_pred)
              
     if params['task'] == 'score_pred':
         mse = np.square(np.subtract(np.array(eval_pred), np.expand_dims(np.array(eval_labels), 1))).mean()
@@ -137,11 +135,11 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
     elif params['task'] == 'minority':
         f05, precision, recall = evaluate(eval_pred, eval_labels, "f05")
     else:
-        print("============Eval pred============")
-        print(eval_pred)
-        print("============Eval labels============")
-        print(eval_labels)
         accuracy, num_correct, num_total = evaluate(eval_pred, eval_labels, "accuracy")
+        print("=========== eval labels ===========")
+        print(eval_labels)
+        print("=========== EVAL PRED ===========")
+        print(eval_pred)
         print("============Accuracy============")
         print(accuracy)
         matrix = metrics.confusion_matrix(eval_labels, eval_pred, labels=[0, 1, 2])
@@ -152,19 +150,19 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
         acc_low = (matrix[0][0] + matrix[1][1] + matrix[1][2] + matrix[2][1] + matrix [2][2])/(sum)
         acc_medium = (matrix[0][0] + matrix[1][1] + matrix[0][2] + matrix[2][0] + matrix [2][2])/(sum)
         acc_high = (matrix[0][0] + matrix[1][1] + matrix[0][1] + matrix[1][0] + matrix [2][2])/(sum)
-        print("====================Accuracy low==================================")
+        print("==================== Accuracy low ===================")
         print(acc_low)  
-        print("====================Accuracy medium==================================")
+        print("==================== Accuracy medium ==================")
         print(acc_medium) 
-        print("====================Accuracy high==================================")
+        print("==================== Accuracy high ====================")
         print(acc_high) 
-        print("====================Average accuracy==================================")
+        print("==================== Average accuracy =================")
         print((acc_low + acc_medium + acc_high)/3) 
-        print("====================Classification report==================================")
+        print("====================Classification report============")
         print(metrics.classification_report(eval_labels, eval_pred, labels=[0, 1, 2], zero_division=1))
     if params['task'] == 'minority':
         return f05, precision, recall, loss
-    elif params["model_type"] == 'sem_rel':
+    elif params["model_type"] == 'sem_rel' or params['model_type']=='sem_rel_prod':
         return accuracy, loss
     else:
         return accuracy, loss, eval_pred, global_avg_deg_test

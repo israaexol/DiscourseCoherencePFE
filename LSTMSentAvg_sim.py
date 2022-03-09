@@ -56,17 +56,16 @@ class LSTMSentAvg(nn.Module):
                     Variable(torch.zeros(1, batch_size, self.lstm_dim)))
 
     def forward(self, inputs, input_lengths, original_index):
-        lstm_out = None  # document vectors
         global_deg_vec = []
         global_avg_deg =[]
-        for i in range(len(inputs)):  # loop over docs
-            doc_batch_size = len(inputs[i])  # number of sents
+        for i in range(len(inputs)):  # itérer sur les documents
+            doc_batch_size = len(inputs[i])  # nombre de phrases
             self.hidden = self.init_hidden(doc_batch_size)
             seq_tensor = self.embeddings(inputs[i])
             # pack
             packed_input = pack_padded_sequence(
                 seq_tensor, input_lengths[i], batch_first=True)
-            # sentence representation
+            # représentation des phrases à partir des word embeddings
             packed_output, (ht, ct) = self.lstm(packed_input, self.hidden)
             # reorder
             final_output = ht[-1]
@@ -74,77 +73,38 @@ class LSTMSentAvg(nn.Module):
                 len(input_lengths[i]), final_output.size(-1))
             output_unsorted = torch.gather(final_output, 0, Variable(odx))
 
-            # 1. Faire une boucle sur le nombre de phrase dans un document, telle que dans chaque
-            # sitération on calcule le vecteur f entre 2 phrases adjacentes
-            # print('========================= output sorted ====================')
-            # print(output_unsorted)
+            # boucler sur le nombre de phrase dans un document, telle que dans chaque
+            # itération on calcule le vecteur f entre 2 phrases adjacentes
+
             size = list(output_unsorted.size())
-            print("=================SIZE===============")
-            print(size)
-            # Print the F_vectors
-            # print("========================= F_vectors =======================")
-            # print(F_vectors)
-
-            # 3. calculer les degrès de continuité entre les fi du tensor précedent et construire un vecteur qui les regroupent.
+            
+            # calculer les degrès de continuité entre les fi du tensor précedent et construire un vecteur qui les regroupent.
             deg_vec = []
-           
-
-                #  B_trans = B.transpose(2,1)
-        
-                #  C = torch.matmul(A,B_trans)
-        
-                # # prevent big values
-                # C = torch.div(C, self.output_size)
-                
-                # C = self.get_positive(C)
-
-            #tensor([[ 0.0643, -0.0601,  0.1489,  ..., -0.1376, -0.0383,  0.0725],
-            #[-0.0783,  0.0044,  0.0805,  ..., -0.0579,  0.0259,  0.1109],
-            #[-0.0436, -0.0950,  0.1002,  ..., -0.0956, -0.0028,  0.1304],
-            # ...,
-            # [-0.0213, -0.0656,  0.1527,  ..., -0.0827,  0.0026,  0.1629],
-            # [-0.0116, -0.0507,  0.0596,  ..., -0.0607, -0.0314,  0.0768],
-            # [-0.0095, -0.0203,  0.1364,  ..., -0.1618, -0.0221, -0.0122]],
             for i in range(size[0] - 1):
                 deg = torch.matmul(output_unsorted[i], output_unsorted[i+1])
-                # prevent big values
                 deg = torch.div(deg, size[1])
                 deg = torch.nn.LeakyReLU(-1.0)(deg)
                 deg = deg.detach().numpy().item()
-                print("========================= deg  =======================")
-                print(deg)
                 # vecteur de degrés de continuité
                 deg_vec.append(deg)
-            print("========================= deg vec =======================")
-            print(deg_vec)
-            # Padding the deg vec
-            # calculate the avg of the deg vector of one document
+            # Padding du vecteur de degré de continuité
+            # calculer la moyenne des degrés de continuité d'un document
             if(len(deg_vec) > 0):
                 avg_deg= sum(deg_vec)/len(deg_vec)
                 global_avg_deg.append(avg_deg)
             pad_deg = np.zeros(self.max_len)
             deg_vec = np.array(deg_vec)
             pad_deg[:deg_vec.size] = deg_vec
-            print("==================Pad deg - initial tensor=====================")
-            print(pad_deg)
             global_deg_vec.append(pad_deg)
-            # append to get the avg deg vector of all documents 
+            # rassembler les moyennes de degrés de continuité de tous les documents 
             
         global_deg_vec = torch.FloatTensor(global_deg_vec)
         global_deg_vec = global_deg_vec.squeeze(1)
-        print("==================Global deg vectors=====================")
-        print(global_deg_vec)
-
         global_vectors = F.dropout(self.bn(F.relu(self.hidden_layer(
             global_deg_vec))), p=self.dropout, training=self.training)
 
-        print("==================Global vectors=====================")
-        print(global_vectors)
-
         coherence_pred = self.predict_layer(global_vectors)
-        print("========================= COHERENCE PRED =======================")
-        print(coherence_pred)
 
         if self.task != 'score_pred':
-            coherence_pred = F.softmax(coherence_pred, dim=0)
+            coherence_pred = F.softmax(coherence_pred, dim=0) #prédiction
         return coherence_pred, global_avg_deg

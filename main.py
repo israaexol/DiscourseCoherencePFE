@@ -6,6 +6,7 @@ from LSTMClique import LSTMClique
 from LSTMSentAvg import LSTMSentAvg
 from LSTMParSeq import LSTMParSeq
 from LSTMSemRel import LSTMSemRel
+from LSTMSemRel_Prod import LSTMSemRel_Prod
 from train_neural_models import *
 # import matplotlib.pyplot as plt
 # from numpy import *
@@ -28,7 +29,7 @@ parser.add_argument("--task", type=str, default="class")
 # model params
 parser.add_argument("--model_type", type=str,
                     default="clique")  # clique, doc_seq
-parser.add_argument("--learning_rate", type=float, default=0.0001)
+parser.add_argument("--learning_rate", type=float, default=0.001)
 parser.add_argument("--dropout", type=float, default=0)
 parser.add_argument("--lstm_dim", type=int, default=100)
 parser.add_argument("--hidden_dim", type=int, default=200,
@@ -60,7 +61,8 @@ parser.add_argument("--data_dir", default="data/",
                     help="path to the data directory")
 parser.add_argument("--train_corpus", type=str)
 parser.add_argument("--test_corpus", type=str)
-
+parser.add_argument("--cross_val", type=int,
+                    default=0, help="Use the cross validation setting")
 
 args = parser.parse_args()
 if args.model_name is None:
@@ -95,6 +97,8 @@ params = {
     'l2_reg': args.l2_reg,
     'batch_size': args.batch_size,
     'num_epochs': args.num_epochs,
+    'cross_val' : args.cross_val
+    
 }
 
 if not os.path.exists(params['run_dir']):
@@ -121,7 +125,9 @@ if params['vector_type'] != 'none':
     vectors, vector_dim = data.load_vectors()
     params['embedding_dim'] = vector_dim
 
-if params['task'] == 'class' or params['task'] == 'score_pred' or params['task'] == 'minority':
+if params['cross_val']==1 and params['task'] == 'class' :
+    data_docs = data.read_data_class_cv(params)
+elif params['task'] == 'class' or params['task'] == 'score_pred' or params['task'] == 'minority':
     training_docs = data.read_data_class(params, 'train')
     test_docs = data.read_data_class(params, 'test')
 else:
@@ -141,6 +147,12 @@ elif params['model_type'] == 'sent_avg':
 elif params['model_type'] == 'par_seq':
     model = LSTMParSeq(params, data)
     train(params, training_docs, test_docs, data, model)
+elif params['model_type'] == 'sem_rel' and params['cross_val']==1:
+    model = LSTMSemRel(params, data)
+    train_cv(params, data_docs, data, model)
+elif params['model_type'] == 'sem_rel_prod' and params['cross_val']==1:
+    model = LSTMSemRel_Prod(params, data)
+    train_prod(params, data_docs, data, model)
 elif params['model_type'] == 'sem_rel':
     model = LSTMSemRel(params, data)
     train(params, training_docs, test_docs, data, model)
