@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 import os
-from DocumentWithCliques import DocumentWithCliques
 from DocumentWithParagraphs import DocumentWithParagraphs
 import random
 from torch.autograd import Variable
@@ -108,24 +107,7 @@ class Data(object):
                 else:
                     label = int(row['labelA'])
                     label = label - 1 # zero-indexing
-                if params['model_type'] == 'clique':
-                    orig_sentences = []
-                    for par in text.splitlines():
-                        par = par.strip()
-                        if par == "":
-                            continue
-                        orig_sentences.extend(sent_tokenize(par))
-                    for i in range(int(self.params['clique_size'] / 2)):
-                        orig_sentences.insert(0, "<d>")
-                        orig_sentences.append("</d>")
-                    doc = DocumentWithCliques(orig_sentences, self.params['clique_size'], None, text_id, label)
-                    for sent in doc.orig_sentences:
-                        sent_idx = []
-                        for token in sent:
-                            idx = self.add_token_to_index(token, add_new_words)
-                            sent_idx.append(idx)
-                        doc.index_sentences.append(sent_idx)
-                elif params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod':
+                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod':
                     doc = DocumentWithParagraphs(text, label, id=text_id)
                     # index words
                     doc_indexed = []
@@ -237,15 +219,7 @@ class Data(object):
                 perm_docs.append(self.read_perm_doc(filename_perm, orig_sentences, "mine", params['model_type']=='clique'))
             if len(perm_docs) == 0:
                 continue  # document has no permutations (is only a single sentence) -- remove from data
-            if params['model_type'] == 'clique':
-                doc = DocumentWithCliques(orig_sentences, self.params['clique_size'], perm_docs, text_id)
-                for sent in doc.orig_sentences:
-                    sent_idx = []
-                    for token in sent:
-                        idx = self.add_token_to_index(token, add_new_words)
-                        sent_idx.append(idx)
-                    doc.index_sentences.append(sent_idx)
-            elif params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq':
+            if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq':
                 # note this loses paragraph info (not useful for permutations task)
                 doc = DocumentWithParagraphs("\n".join(orig_sentences), None, orig_sentences, perm_docs, text_id)
                 # index words
