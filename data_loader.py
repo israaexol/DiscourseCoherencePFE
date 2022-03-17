@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import numpy as np
 import os
-from DocumentWithCliques import DocumentWithCliques
 from DocumentWithParagraphs import DocumentWithParagraphs
 import random
 from torch.autograd import Variable
@@ -79,16 +78,10 @@ class Data(object):
                     valueAscii = value.encode('ascii','ignore').decode()
                     row_dict[keyAscii] = valueAscii
                 row = row_dict
-                # print("==============row=================")
-                # print(row)
                 text = row['text']
-                # print("=================TEXT===================")
-                # print(text)
                 if not self.params['case_sensitive']:
                     text = text.lower()
                 text_id = row['text_id']
-                # print("=================TEXT ID==================")
-                # print(text_id)
                 if params['task'] == 'score_pred':
                     labels = [int(row['ratingA1']), int(row['ratingA2']), int(row['ratingA3'])]
                     label = np.mean(labels)
@@ -108,24 +101,49 @@ class Data(object):
                 else:
                     label = int(row['labelA'])
                     label = label - 1 # zero-indexing
-                if params['model_type'] == 'clique':
-                    orig_sentences = []
-                    for par in text.splitlines():
-                        par = par.strip()
-                        if par == "":
-                            continue
-                        orig_sentences.extend(sent_tokenize(par))
-                    for i in range(int(self.params['clique_size'] / 2)):
-                        orig_sentences.insert(0, "<d>")
-                        orig_sentences.append("</d>")
-                    doc = DocumentWithCliques(orig_sentences, self.params['clique_size'], None, text_id, label)
-                    for sent in doc.orig_sentences:
-                        sent_idx = []
-                        for token in sent:
-                            idx = self.add_token_to_index(token, add_new_words)
-                            sent_idx.append(idx)
-                        doc.index_sentences.append(sent_idx)
-                elif params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod':
+                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod':
+                    doc = DocumentWithParagraphs(text, label, id=text_id)
+                    # index words
+                    doc_indexed = []
+                    for para in doc.text:
+                        para_indexed = []
+                        for sent in para:
+                            sent_indexed = []
+                            for word in sent:
+                                sent_indexed.append(self.add_token_to_index(word, add_new_words))
+                            para_indexed.append(sent_indexed)
+                        doc_indexed.append(para_indexed)
+                    doc.text_indexed = doc_indexed
+                documents.append(doc)
+        return documents
+
+    def read_data_class_tag(self, params, split):
+        # corpus = params['data_dir'].rsplit('/', 2)[1]
+        if split == 'train' or split == 'train_nodev':
+            corpus = params['train_corpus']
+        elif split == 'test':
+            corpus = params['test_corpus']
+        documents = []
+        add_new_words = False
+        if self.word_embeds is None and split == "train":
+            add_new_words = True
+        filename = corpus + '_' + split + '.csv'
+        with open(params['data_dir'] + corpus + '/' + filename,'r', encoding='utf-8') as in_file:
+            reader = csv.DictReader(in_file)
+            for row in reader:
+                row_dict = {}
+                for key, value in row.items():
+                    keyAscii = key.encode('ascii', 'ignore' ).decode()
+                    valueAscii = value.encode('ascii','ignore').decode()
+                    row_dict[keyAscii] = valueAscii
+                row = row_dict
+                text = row['pos_tags']
+                if not self.params['case_sensitive']:
+                    text = text.lower()
+                text_id = row['text_id']
+                label = int(row['labelA'])
+                label = label - 1 # zero-indexing
+                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod' or params['model_type']=='cnn_pos_tag':
                     doc = DocumentWithParagraphs(text, label, id=text_id)
                     # index words
                     doc_indexed = []
@@ -203,6 +221,46 @@ class Data(object):
                 # print(documents)
         return documents
 
+
+    def read_data_class_cv_tag(self, params):
+        # corpus = params['data_dir'].rsplit('/', 2)[1]
+        corpus = params['train_corpus']
+        documents = []
+        add_new_words = False
+        if self.word_embeds is None :
+            add_new_words = True
+        filename = corpus + '.csv'
+        with open(params['data_dir'] + corpus + '/' + filename,'r', encoding='utf-8') as in_file:
+            reader = csv.DictReader(in_file)
+            for row in reader:
+                row_dict = {}
+                for key, value in row.items():
+                    keyAscii = key.encode('ascii', 'ignore' ).decode()
+                    valueAscii = value.encode('ascii','ignore').decode()
+                    row_dict[keyAscii] = valueAscii
+                row = row_dict
+                text = row['pos_tags']
+                if not self.params['case_sensitive']:
+                    text = text.lower()
+                text_id = row['text_id']
+                label = int(row['labelA'])
+                label = label - 1 # zero-indexing
+                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod' or params['model_type']=='cnn_pos_tag':
+                    doc = DocumentWithParagraphs(text, label, id=text_id)
+                    # index words
+                    doc_indexed = []
+                    for para in doc.text:
+                        para_indexed = []
+                        for sent in para:
+                            sent_indexed = []
+                            for word in sent:
+                                sent_indexed.append(self.add_token_to_index(word, add_new_words))
+                            para_indexed.append(sent_indexed)
+                        doc_indexed.append(para_indexed)
+                    doc.text_indexed = doc_indexed
+                documents.append(doc)
+        return documents
+    
     # read my Yahoo/Clinton/Enron data for binary ranking permutation task (cross-validation fold)
     def read_data_perm(self, params, split):
         # corpus = params['data_dir'].rsplit('/', 2)[1]
@@ -237,15 +295,7 @@ class Data(object):
                 perm_docs.append(self.read_perm_doc(filename_perm, orig_sentences, "mine", params['model_type']=='clique'))
             if len(perm_docs) == 0:
                 continue  # document has no permutations (is only a single sentence) -- remove from data
-            if params['model_type'] == 'clique':
-                doc = DocumentWithCliques(orig_sentences, self.params['clique_size'], perm_docs, text_id)
-                for sent in doc.orig_sentences:
-                    sent_idx = []
-                    for token in sent:
-                        idx = self.add_token_to_index(token, add_new_words)
-                        sent_idx.append(idx)
-                    doc.index_sentences.append(sent_idx)
-            elif params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq':
+            if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq':
                 # note this loses paragraph info (not useful for permutations task)
                 doc = DocumentWithParagraphs("\n".join(orig_sentences), None, orig_sentences, perm_docs, text_id)
                 # index words
@@ -443,6 +493,8 @@ class Data(object):
                 self.word_embeds = self.word_embeds.cuda()
             self.word_embeds.weight.data.copy_(torch.from_numpy(data_arr))
             self.word_embeds.weight.requires_grad = False
+            print("============================= word embeddings ================================")
+            print(self.word_embeds)
             print("loading: done")
             return self.word_embeds, vector_len
         else:
@@ -476,7 +528,7 @@ class Data(object):
                 batch.append([])
         for idx in indices:
             batch_labels.append(labels[idx])
-            if model_type == 'sent_avg' or model_type == 'par_seq' or model_type =='sem_rel' or model_type =='sem_rel_prod':
+            if model_type == 'sent_avg' or model_type == 'par_seq' or model_type =='sem_rel' or model_type =='sem_rel_prod' or model_type =='cnn_pos_tag':
                 batch.append(data[idx])
             elif model_type == 'clique':
                 for i in range(clique_size):
@@ -529,7 +581,7 @@ class Data(object):
                 input_var.append(doc_var)
                 input_len.append(doc_len)
                 reverse_index.append(doc_index)
-        if model_type == 'sent_avg':
+        if model_type == 'sent_avg' or model_type=='cnn_pos_tag':
             input_var = []
             input_len = []
             reverse_index = []

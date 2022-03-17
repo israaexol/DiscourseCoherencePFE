@@ -24,7 +24,7 @@ from sklearn.model_selection import StratifiedKFold, KFold, cross_val_score
 USE_CUDA = torch.cuda.is_available()
 FloatTensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if USE_CUDA else torch.LongTensor
-
+    
 # normalize a vector to have unit norm
 def normalize(weights):
 	# calculate l1 vector norm
@@ -34,6 +34,55 @@ def normalize(weights):
 		return weights
 	# return normalized vector (unit norm)
 	return weights / result
+
+def train_test(params, training_docs, test_docs, data, model): #To test the embeddings 
+    if params['model_type'] == 'par_seq':
+        training_data, training_labels, train_ids = data.create_doc_sents(training_docs, 'paragraph', params['task'],
+                                                                          params['train_data_limit'])
+        test_data, test_labels, test_ids = data.create_doc_sents(test_docs, 'paragraph', params['task'], params['train_data_limit'])
+   
+    if USE_CUDA:
+        model.cuda()
+    if params['train_data_limit'] != -1:
+        training_docs = training_docs[:10]
+        test_docs = test_docs[:10]
+    parameters = filter(lambda p: p.requires_grad, model.parameters())
+    optimizer = optim.Adam(parameters, weight_decay=params['l2_reg'])
+    scheduler = None
+    if params['lr_decay'] == 'step':
+        scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
+    elif params['lr_decay'] == 'lambda':
+        lambda1 = lambda epoch: 0.95 ** epoch
+        scheduler = LambdaLR(optimizer, lr_lambda=[lambda1])
+    if params['task'] == 'class' or params['task'] == 'perm' or params['task'] == 'minority':
+        loss_fn = torch.nn.CrossEntropyLoss()
+    elif params['task'] == 'score_pred':
+        loss_fn = torch.nn.MSELoss()
+    timestamp = time.time()
+    best_test_acc = 0
+
+    for epoch in range(params['num_epochs']):
+        if params['lr_decay'] == 'lambda' or params['lr_decay'] == 'step':
+            scheduler.step()
+            print(optimizer.param_groups[0]['lr'])
+        print("EPOCH "+str(epoch))
+        total_loss = 0
+        steps = int(len(training_data) / params['batch_size'])
+        indices = list(range(len(training_data)))
+        random.shuffle(indices)
+        bar = progressbar.ProgressBar()
+        model.train()
+        for step in bar(range(steps)):
+
+            batch_ind = indices[(step * params["batch_size"]):((step + 1) * params["batch_size"])]
+            sentences, orig_batch_labels = data.get_batch(training_data, training_labels, batch_ind, params['model_type'], params['clique_size'])
+            batch_padded, batch_lengths, original_index = data.pad_to_batch(sentences, data.word_to_idx, params['model_type'], params['clique_size'])
+            model.zero_grad()
+            model(batch_padded, batch_lengths, original_index)
+            print('======== batch padded size =========')
+            print(len(batch_padded[0]))
+
+    return best_test_acc
 
 def train(params, training_docs, test_docs, data, model):
     if params['model_type'] == 'clique':
@@ -50,6 +99,10 @@ def train(params, training_docs, test_docs, data, model):
         training_data, training_labels, train_ids = data.create_doc_sents(training_docs, 'paragraph', params['task'],
                                                                           params['train_data_limit'])
         test_data, test_labels, test_ids = data.create_doc_sents(test_docs, 'paragraph', params['task'], params['train_data_limit'])
+    elif params['model_type']=='cnn_pos_tag':
+        training_data, training_labels, train_ids = data.create_doc_sents(training_docs, 'sentence', params['task'],
+                                                                          params['train_data_limit'])
+        test_data, test_labels, test_ids = data.create_doc_sents(test_docs, 'sentence', params['task'], params['train_data_limit'])
 
     if USE_CUDA:
         model.cuda()
@@ -70,8 +123,6 @@ def train(params, training_docs, test_docs, data, model):
         loss_fn = torch.nn.MSELoss()
     timestamp = time.time()
     best_test_acc = 0
-    #test_acc_tab=[]
-    #test_ep_tab=[]
     best_weights = None
     best_score = 0
     w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -90,8 +141,6 @@ def train(params, training_docs, test_docs, data, model):
 
             batch_ind = indices[(step * params["batch_size"]):((step + 1) * params["batch_size"])]
             sentences, orig_batch_labels = data.get_batch(training_data, training_labels, batch_ind, params['model_type'], params['clique_size'])
-            # print("==============ORIG BATCH LABELS==============")
-            # print(orig_batch_labels)
             batch_padded, batch_lengths, original_index = data.pad_to_batch(sentences, data.word_to_idx, params['model_type'], params['clique_size'])
             model.zero_grad()
             if params['model_type']== 'sem_rel':
@@ -103,8 +152,6 @@ def train(params, training_docs, test_docs, data, model):
                 y_pred = np.array(y_pred)
                 print("=============== Y_PRED =====================")
                 print(y_pred)
-                # define weights to consider
-                # iterate all possible combinations (cartesian product)
                 for weights in product(w, repeat=2):
                     # skip if all weights are equal
                     if len(set(weights)) == 1:
@@ -114,8 +161,6 @@ def train(params, training_docs, test_docs, data, model):
                     # evaluate weights
                     # weighted sum across ensemble members
                     summed = tensordot(y_pred, weights, axes=((0),(0)))
-                    # print("================summed===================")
-                    # print(summed)
                     # argmax across classes
                     result = argmax(summed, axis=1)
                     print("================result===================")
@@ -136,13 +181,12 @@ def train(params, training_docs, test_docs, data, model):
                 print("===================== Class weights ==========================")
                 print(class_weights)
                 class_weights = torch.tensor(class_weights, dtype=torch.float)
-                # classWeight = {0: class_weights[0], 1: class_weights[1], 2: class_weights[2]}
-                # print("===================== Class weights dictionary ==========================")
-                # print(classWeight)
-                
                
                 loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights,reduction='mean')
                 loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
+            elif params['model_type']== 'cnn_pos_tag': 
+                pred_coherence = model(batch_padded, batch_lengths, original_index)
+                loss = loss_fn(pred_coherence, Variable(LongTensor(orig_batch_labels))) 
             else: 
                 pred_coherence, avg_deg_train= model(batch_padded, batch_lengths, original_index)
                 if params['task'] == 'score_pred':
@@ -157,28 +201,14 @@ def train(params, training_docs, test_docs, data, model):
         print("Time %-5.2f min" % ((current_time - timestamp) / 60.0))
         print("Train loss: " + str(total_loss))
         output_name = params['model_name'] + '_epoch' + str(epoch)
-        if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel':
+        if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='cnn_pos_tag':
             if params['task'] == 'minority':
                 test_f05, test_precision, test_recall, test_loss = eval_docs(model, loss_fn, test_data, test_labels,
                                                                         data, params)
-            elif params['model_type']== 'sem_rel':
+            elif params['model_type']== 'sem_rel' or params['model_type']== 'cnn_pos_tag':
                 test_accuracy, test_loss = eval_docs(model, loss_fn, test_data, test_labels, data, params)                                
             elif params['task'] == 'class' or params['task'] == 'score_pred':
                 test_accuracy, test_loss, global_eval_pred, global_avg_deg_test = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
-
-                # print("=========== GLOBAL EVAL PRED ===================")
-                # print(global_eval_pred)
-                # print("=========== GLOBAL EVAL PRED SIZE ===================")
-                # print(len(global_eval_pred))
-                # print("=========== GLOBAL AVG DEG ===================")
-                # print(global_avg_deg_test)
-                # print("=============================GLOBAL AVG DEG TEST SIZE ====================")
-                # print(len(global_avg_deg_test))
-                # plt.scatter(global_avg_deg_test, global_eval_pred)
-                # plt.title('EPOCH N°' + str(epoch))
-                # plt.xlabel('Cosine similarity')
-                # plt.ylabel('Scores de cohérence')
-                # plt.show()
 
             elif params['task'] == 'perm':
                 test_accuracy, test_loss = eval_docs_rank(model, test_docs, data, params)
@@ -237,9 +267,6 @@ def train_cv(params, data_docs, data, model):
     
     if USE_CUDA:
         model.cuda()
-    # if params['train_data_limit'] != -1:
-    #     training_docs = training_docs[:10]
-    #     test_docs = test_docs[:10]
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = optim.Adam(parameters, weight_decay=params['l2_reg'])
     scheduler = None
@@ -257,7 +284,7 @@ def train_cv(params, data_docs, data, model):
     best_weights = None
     best_score = 0
     w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    kfold = StratifiedKFold(n_splits = 10, shuffle = False) 
+    kfold = StratifiedKFold(n_splits = 5, shuffle = False) 
     for epoch in range(params['num_epochs']):
         if params['lr_decay'] == 'lambda' or params['lr_decay'] == 'step':
             scheduler.step()
@@ -265,8 +292,6 @@ def train_cv(params, data_docs, data, model):
         print("EPOCH " + str(epoch))
         total_loss = 0
         model.train()
-        # print("============== data docs ================== ")
-        # print(data_docs[1].label)
         labels = []
         for i in range(len(data_docs)):
             labels.append(data_docs[i].label)
@@ -285,8 +310,6 @@ def train_cv(params, data_docs, data, model):
 
                 batch_ind = indices[(step * params["batch_size"]):((step + 1) * params["batch_size"])]
                 sentences, orig_batch_labels = data.get_batch(training_data, training_labels, batch_ind, params['model_type'], params['clique_size'])
-                # print("==============ORIG BATCH LABELS==============")
-                # print(orig_batch_labels)
                 batch_padded, batch_lengths, original_index = data.pad_to_batch(sentences, data.word_to_idx, params['model_type'], params['clique_size'])
                 model.zero_grad()
                 if params['model_type']== 'sem_rel':
@@ -296,38 +319,24 @@ def train_cv(params, data_docs, data, model):
                     y_pred.append(coherence_pred_sent)
                     y_pred.append(coherence_pred_par)
                     y_pred = np.array(y_pred)
-                    # print("=============== Y_PRED =====================")
-                    # print(y_pred)
-                    # define weights to consider
-                    # iterate all possible combinations (cartesian product)
                     for weights in product(w, repeat=2):
-                        # skip if all weights are equal
                         if len(set(weights)) == 1:
                             continue
-                        # hack, normalize weight vector
                         weights = normalize(weights)
-                        # evaluate weights
-                        # weighted sum across ensemble members
                         summed = tensordot(y_pred, weights, axes=((0),(0)))
                         # argmax across classes
                         result = argmax(summed, axis=1)
-                        # print("================result===================")
-                        # print(result)
                         # calculate accuracy
                         score = accuracy_score(orig_batch_labels, result)
-                        # print("====================score==================")
-                        # print(score)
                         if score > best_score:
                             best_score = score
                             best_weights = weights
                             best_weights = list(best_weights)
-                            # print("best_weights")
-                            # print(best_weights)
                     final_pred = model(batch_padded, batch_lengths, original_index, weights=best_weights)
                     loss_fn = torch.nn.CrossEntropyLoss()
                     loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
                 else: 
-                    pred_coherence, avg_deg_train= model(batch_padded, batch_lengths, original_index)
+                    pred_coherence = model(batch_padded, batch_lengths, original_index)
                     if params['task'] == 'score_pred':
                         loss = loss_fn(pred_coherence, Variable(FloatTensor(orig_batch_labels)))
                     else:
@@ -341,11 +350,12 @@ def train_cv(params, data_docs, data, model):
             print("Time %-5.2f min" % ((current_time - timestamp) / 60.0))
             print("Fold" + str(fold) + " - Train loss: " +str(total_loss))
             output_name = params['model_name'] + '_epoch' + str(epoch)
-            if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel':
+            if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='cnn_pos_tag':
                 
                 if params['model_type']== 'sem_rel':
                     test_accuracy, test_loss = eval_docs(model, loss_fn, test_data, test_labels, data, params)                                
-
+                if params['model_type'] == 'cnn_pos_tag':
+                    test_accuracy, test_loss = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
                 print("Fold" + str(fold) +" - Test loss: %0.3f" % test_loss)
                 if params['task'] == 'score_pred':
                     print("Test correlation: %0.5f" % (test_accuracy))
@@ -358,7 +368,7 @@ def train_cv(params, data_docs, data, model):
                 torch.save(model.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best')
                 print('saved model ' + params['model_dir'] + '/' + params['model_name'] + '_best')
             print()
-            fold +=1
+            fold += 1
     print("==================== BEST TEST ACCURACY =================================")
     print(best_test_acc)
     return best_test_acc

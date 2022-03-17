@@ -74,7 +74,7 @@ class LSTMParSeq(nn.Module):
                 final_output = ht[-1]
                 odx = original_index[i][j].view(-1, 1).expand(len(input_lengths[i][j]), final_output.size(-1))
                 output_unsorted = torch.gather(final_output, 0, Variable(odx))
-                # génértion des représentations de paragraphes à partir de celles des phrases
+                # génération des représentations de paragraphes à partir de celles des phrases
                 output_unsorted = output_unsorted.unsqueeze(1)
                 self.sent_lstm_hidden = self.init_hidden(output_unsorted.size(1))
                 output_pars, (ht, ct) = self.sent_lstm(output_unsorted, self.sent_lstm_hidden)
