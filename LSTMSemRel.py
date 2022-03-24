@@ -167,15 +167,15 @@ class LSTMSemRel(nn.Module):
         coherence_pred_par = F.softmax(coherence_pred_par, dim=0)
         coherence_pred_parTensor = coherence_pred_par
        
-        coherence_pred_sent = coherence_pred_sent.tolist()
-        coherence_pred_par = coherence_pred_par.tolist()
+        #coherence_pred_sent = coherence_pred_sent.tolist()
+        #coherence_pred_par = coherence_pred_par.tolist()
 
         #Prédiction finale à partir de celles des deux niveaux
         if(weights is None):
             return coherence_pred_sent, coherence_pred_par
-        else:
-            coherence_pred_sent = torch.mul(coherence_pred_sentTensor, weights[0])
-            coherence_pred_par = torch.mul(coherence_pred_parTensor, weights[1])
-            final_prediction = coherence_pred_sent.add(coherence_pred_par)
-            return final_prediction
+        # else:
+        #     coherence_pred_sent = torch.mul(coherence_pred_sentTensor, weights[0])
+        #     coherence_pred_par = torch.mul(coherence_pred_parTensor, weights[1])
+        #     final_prediction = coherence_pred_sent.add(coherence_pred_par)
+        #     return final_prediction
            

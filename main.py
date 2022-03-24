@@ -127,7 +127,13 @@ if params['vector_type'] != 'none':
     vectors, vector_dim = data.load_vectors()
     params['embedding_dim'] = vector_dim
 
-if params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'cnn_pos_tag' :
+if params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'fusion_sem_syn' :
+    data_docs_cnn = data.read_data_class_cv_tag(params)
+    data_docs_sem = data.read_data_class_cv(params)
+    model_cnn = CNNPosTag(params, data)
+    model_sem = LSTMSemRel(params, data)
+    train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_sem)
+elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'cnn_pos_tag' :
     data_docs = data.read_data_class_cv_tag(params)
     model = CNNPosTag(params, data) #parseq
     train_cv(params, data_docs, data, model) #train

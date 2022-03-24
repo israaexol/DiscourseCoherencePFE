@@ -474,3 +474,153 @@ def test(params, test_docs, data, model):
     elif params['model_type'] == 'clique':
         doc_accuracy = eval_doc_cliques(model, test_docs, data, params)
         print("Test document ranking accuracy: %0.2f%%" % (doc_accuracy * 100))
+
+def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_sem):
+    
+    if USE_CUDA:
+        model_cnn.cuda()
+        model_sem.cuda()
+    parameters_cnn = filter(lambda p: p.requires_grad, model_cnn.parameters())
+    parameters_sem = filter(lambda p: p.requires_grad, model_sem.parameters())
+    
+    optimizer_cnn = optim.Adam(parameters_cnn, weight_decay=params['l2_reg'])
+    optimizer_sem = optim.Adam(parameters_sem, weight_decay=params['l2_reg'])
+    
+    scheduler_cnn = None
+    scheduler_sem = None
+    if params['lr_decay'] == 'step':
+        scheduler_cnn = StepLR(optimizer_cnn, step_size=30, gamma=0.1)
+        scheduler_sem = StepLR(optimizer_sem, step_size=30, gamma=0.1)
+    elif params['lr_decay'] == 'lambda':
+        lambda1 = lambda epoch: 0.95 ** epoch
+        scheduler_cnn = LambdaLR(optimizer_cnn, lr_lambda=[lambda1])
+        scheduler_sem = LambdaLR(optimizer_sem, lr_lambda=[lambda1])
+    if params['task'] == 'class':
+        loss_fn = torch.nn.CrossEntropyLoss()
+    elif params['task'] == 'score_pred':
+        loss_fn = torch.nn.MSELoss()
+    timestamp = time.time()
+    best_test_acc = 0
+    best_weights = None
+    best_score = 0
+    w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    kfold = StratifiedKFold(n_splits = 5, shuffle = False) 
+    for epoch in range(params['num_epochs']):
+        if params['lr_decay'] == 'lambda' or params['lr_decay'] == 'step':
+            scheduler_cnn.step()
+            scheduler_sem.step()
+            print("optimizer CNN_POS_TAG")
+            print(optimizer_cnn.param_groups[0]['lr'])
+            print("optimizer SEM_REL")
+            print(optimizer_sem.param_groups[0]['lr'])
+        print("EPOCH " + str(epoch))
+        total_loss = 0
+        model_cnn.train()
+        model_sem.train()
+
+        labels = []
+        for i in range(len(data_docs_cnn)): #the labels are the same for both models
+            labels.append(data_docs_cnn[i].label)
+        for train, test in kfold.split(np.zeros(4800), labels):
+            training_data_cnn = np.array(data_docs_cnn)[train]
+            training_data_sem = np.array(data_docs_sem)[train]
+            
+            test_data_cnn = np.array(data_docs_cnn)[test]
+            test_data_sem = np.array(data_docs_sem)[test]
+            
+            training_data_cnn, training_labels_cnn, train_ids_cnn = data.create_doc_sents(training_data_cnn, 'paragraph', params['task'],
+                                                                          params['train_data_limit'])
+            training_data_sem, training_labels_sem, train_ids_sem = data.create_doc_sents(training_data_sem, 'paragraph', params['task'],
+                                                                          params['train_data_limit'])
+            
+            test_data_cnn, test_labels_cnn, test_ids_cnn = data.create_doc_sents(test_data_cnn, 'paragraph', params['task'], params['train_data_limit'])
+            test_data_sem, test_labels_sem, test_ids_sem = data.create_doc_sents(test_data_sem, 'paragraph', params['task'], params['train_data_limit'])
+
+            steps = int(len(training_data_cnn) / params['batch_size']) #same steps for both
+            indices = list(range(len(training_data_cnn)))
+            random.shuffle(indices)
+            bar = progressbar.ProgressBar()
+            for step in bar(range(steps)):
+
+                batch_ind = indices[(step * params["batch_size"]):((step + 1) * params["batch_size"])]
+                sentences_cnn, orig_batch_labels = data.get_batch(training_data_cnn, training_labels_cnn, batch_ind, params['model_type'], params['clique_size'])
+                sentences_sem, orig_batch_labels = data.get_batch(training_data_sem, training_labels_cnn, batch_ind, params['model_type'], params['clique_size'])
+
+                batch_padded_cnn, batch_lengths_cnn, original_index = data.pad_to_batch(sentences_cnn, data.word_to_idx, params['model_type'], params['clique_size'])
+                batch_padded_sem, batch_lengths_sem, original_index = data.pad_to_batch(sentences_sem, data.word_to_idx, params['model_type'], params['clique_size'])
+
+                model_cnn.zero_grad()
+                model_sem.zero_grad()
+                if params['model_type']== 'sem_rel' or params['model_type']== 'fusion_sem_syn':
+                    y_pred = []
+                    coherence_pred_cnn = model_cnn(batch_padded_cnn, batch_lengths_cnn, original_index)
+                    coherence_pred_cnn_Tensor = coherence_pred_cnn
+                    coherence_pred_cnn = coherence_pred_cnn.tolist()
+                    
+                    coherence_pred_sent, coherence_pred_par = model_sem(batch_padded_sem, batch_lengths_sem, original_index)
+                    coherence_pred_sem_sentTensor = coherence_pred_sent
+                    coherence_pred_sent = coherence_pred_sent.tolist()
+                    
+                    coherence_pred_sem_parTensor = coherence_pred_par
+                    coherence_pred_par = coherence_pred_par.tolist() 
+                                       
+                    #gather coherence predictions into one array
+                    y_pred.append(coherence_pred_cnn)
+                    y_pred.append(coherence_pred_sent)
+                    y_pred.append(coherence_pred_par)
+                    
+                    y_pred = np.array(y_pred)
+                    for weights in product(w, repeat=3):
+                        if len(set(weights)) == 1:
+                            continue
+                        weights = normalize(weights)
+                        summed = tensordot(y_pred, weights, axes=((0),(0)))
+                        # argmax across classes
+                        result = argmax(summed, axis=1)
+                        # calculate accuracy
+                        score = accuracy_score(orig_batch_labels, result)
+                        if score > best_score:
+                            best_score = score
+                            best_weights = weights
+                            best_weights = list(best_weights)
+                    
+                    coherence_pred_cnn = torch.mul(coherence_pred_cnn_Tensor, best_weights[0])
+                    coherence_pred_sent = torch.mul(coherence_pred_sem_sentTensor, best_weights[1])
+                    coherence_pred_par = torch.mul(coherence_pred_sem_parTensor, best_weights[2])
+                    final_prediction1 = coherence_pred_sent.add(coherence_pred_par)
+                    final_pred = final_prediction1.add(coherence_pred_cnn)
+                    #final_pred = model(batch_padded, batch_lengths, original_index, weights=best_weights)
+                    loss_fn = torch.nn.CrossEntropyLoss()
+                    loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
+                    
+                mean_loss = loss / params["batch_size"]
+                mean_loss.backward()
+                total_loss += loss.cpu().data.numpy()
+                optimizer_cnn.step()
+                optimizer_sem.step()
+            fold = 0
+            current_time = time.time()
+            print("Time %-5.2f min" % ((current_time - timestamp) / 60.0))
+            print("Fold" + str(fold) + " - Train loss: " +str(total_loss))
+            output_name = params['model_name'] + '_epoch' + str(epoch)
+            if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='cnn_pos_tag':
+                
+                if params['model_type']== 'fusion_sem_syn':
+                    test_accuracy, test_loss = eval_docs_fusion(model_cnn, model_sem, loss_fn, test_data_cnn, test_data_sem, test_labels_cnn, data, params)                                 
+                print("Fold" + str(fold) +" - Test loss: %0.3f" % test_loss)
+                if params['task'] == 'score_pred':
+                    print("Test correlation: %0.5f" % (test_accuracy))
+                else:
+                    print("Fold" + str(fold) +" - Test accuracy: %0.2f%%" % (test_accuracy * 100))
+            
+            if test_accuracy > best_test_acc:
+                best_test_acc = test_accuracy
+                # save best model
+                torch.save(model_cnn.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best')
+                torch.save(model_sem.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best')
+                print('saved model ' + params['model_dir'] + '/' + params['model_name'] + '_best')
+            print()
+            fold += 1
+    print("==================== BEST TEST ACCURACY =================================")
+    print(best_test_acc)
+    return best_test_acc
