@@ -86,14 +86,22 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
             eval_pred.extend(list(np.argmax(batch_pred.cpu().data.numpy(), axis=1)))      
         else:
             batch_pred, avg_deg_test = model(batch_padded, batch_lengths, original_index)
+            # print("=========== BATCH PRED ===========")
+            # print(batch_pred)
             global_avg_deg_test += avg_deg_test
             eval_labels.extend(orig_batch_labels)
+            # print("=========== EVAL LABELS ===========")
+            # print(eval_labels)
             if params['task'] == 'score_pred':
                 loss += loss_fn(batch_pred, Variable(FloatTensor(orig_batch_labels))).cpu().data.numpy()
                 eval_pred.extend(list(batch_pred.cpu().data.numpy())) 
             else:
                 loss += loss_fn(batch_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
                 eval_pred.extend(list(np.argmax(batch_pred.cpu().data.numpy(), axis=1)))
+                # print("===============Eval pred size================")
+                # print(len(eval_pred))
+                # print("=========== EVAL PRED ===========")
+                # print(eval_pred)
              
     if params['task'] == 'score_pred':
         mse = np.square(np.subtract(np.array(eval_pred), np.expand_dims(np.array(eval_labels), 1))).mean()

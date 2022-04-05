@@ -121,6 +121,7 @@ if params['vector_type'] != 'none':
     vectors, vector_dim = data.load_vectors()
     params['embedding_dim'] = vector_dim
 
+<<<<<<< HEAD
 # dev_docs = None
 if params['vector_type'] == 'none':  # init random vectors
     vectors = data.rand_vectors(len(data.word_to_idx))
@@ -135,6 +136,9 @@ if params['cross_val'] == 1 and params['task'] == 'class' and params['model_type
 
 # Modèle de classification du niveau syntaxique avec la validation croisée
 elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'cnn_pos_tag' and params['pos_tag'] == 1 :
+=======
+if params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'cnn_pos_tag' :
+>>>>>>> parent of 15cb49e (fusion du niveau sémantique et syntaxique)
     data_docs = data.read_data_class_cv_tag(params)
     model = CNNPosTag(params, data) 
     train_cv(params, data_docs, data, model)
