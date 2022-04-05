@@ -33,7 +33,7 @@ python main.py --model_name sentavg_model --train_corpus GCDC_cv --model_type se
 * Sans la validation croisée :
 ```
 python main.py --model_name parseq_model --train_corpus GCDC --model_type par_seq --task class
-
+```
 * Avec la validation croisée :
 ```
 python main.py --model_name parseq_model --train_corpus GCDC_cv --model_type par_seq --task class --cross_val 1
