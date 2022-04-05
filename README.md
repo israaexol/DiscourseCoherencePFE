@@ -23,10 +23,11 @@ Les modèles sont évalués sur la tâche de classification à trois niveaux (lo
 * Sans la validation croisée :
 ```
 python main.py --model_name sentavg_model --train_corpus GCDC --model_type sent_avg --task class
-
+```
 * Avec la validation croisée :
 ```
 python main.py --model_name sentavg_model --train_corpus GCDC_cv --model_type sent_avg --task class --cross_val 1
+```
 
 2) Au niveau des paragraphes (PAR_SEQ)
 * Sans la validation croisée :
