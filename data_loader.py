@@ -101,7 +101,7 @@ class Data(object):
                 else:
                     label = int(row['labelA'])
                     label = label - 1 # zero-indexing
-                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod':
+                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod' or params['model_type']=='fusion_sem_syn':
                     doc = DocumentWithParagraphs(text, label, id=text_id)
                     # index words
                     doc_indexed = []
@@ -143,7 +143,7 @@ class Data(object):
                 text_id = row['text_id']
                 label = int(row['labelA'])
                 label = label - 1 # zero-indexing
-                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod' or params['model_type']=='cnn_pos_tag':
+                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod' or params['model_type']=='cnn_pos_tag' or params['model_type']=='fusion_sem_syn':
                     doc = DocumentWithParagraphs(text, label, id=text_id)
                     # index words
                     doc_indexed = []
@@ -203,7 +203,7 @@ class Data(object):
                     label = int(row['labelA'])
                     label = label - 1 # zero-indexing
                 
-                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod':
+                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod' or params['model_type']=='fusion_sem_syn':
                     doc = DocumentWithParagraphs(text, label, id=text_id)
                     # index words
                     doc_indexed = []
@@ -229,7 +229,7 @@ class Data(object):
         add_new_words = False
         if self.word_embeds is None :
             add_new_words = True
-        filename = corpus + '.csv'
+        filename = corpus + '_tag_cv.csv'
         with open(params['data_dir'] + corpus + '/' + filename,'r', encoding='utf-8') as in_file:
             reader = csv.DictReader(in_file)
             for row in reader:
@@ -245,7 +245,7 @@ class Data(object):
                 text_id = row['text_id']
                 label = int(row['labelA'])
                 label = label - 1 # zero-indexing
-                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod' or params['model_type']=='cnn_pos_tag':
+                if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type']=='sem_rel' or params['model_type']=='sem_rel_prod' or params['model_type']=='cnn_pos_tag' or params['model_type']=='fusion_sem_syn':
                     doc = DocumentWithParagraphs(text, label, id=text_id)
                     # index words
                     doc_indexed = []
@@ -528,7 +528,7 @@ class Data(object):
                 batch.append([])
         for idx in indices:
             batch_labels.append(labels[idx])
-            if model_type == 'sent_avg' or model_type == 'par_seq' or model_type =='sem_rel' or model_type =='sem_rel_prod' or model_type =='cnn_pos_tag':
+            if model_type == 'sent_avg' or model_type == 'par_seq' or model_type =='sem_rel' or model_type =='sem_rel_prod' or model_type =='cnn_pos_tag' or model_type =='fusion_sem_syn':
                 batch.append(data[idx])
             elif model_type == 'clique':
                 for i in range(clique_size):
@@ -550,7 +550,7 @@ class Data(object):
         return new_data_list
 
     def pad_to_batch(self, batch, word_to_idx, model_type, clique_size=0):  # batch is list of (sequence, label)
-        if model_type == 'par_seq' or model_type == 'sem_rel' or model_type=='sem_rel_prod':
+        if model_type == 'par_seq' or model_type == 'sem_rel' or model_type=='sem_rel_prod' or model_type =='fusion_sem_syn':
             input_var = []
             input_len = []
             reverse_index = []

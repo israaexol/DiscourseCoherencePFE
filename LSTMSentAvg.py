@@ -15,30 +15,28 @@ class LSTMSentAvg(nn.Module):
 
     def __init__(self, params, data_obj):
         super(LSTMSentAvg, self).__init__()
-        sys.stdout = open('sentavg_GCDC_all_class_cos.txt', 'w')
+        #sys.stdout = open('sentavg_GCDC_all_class_cos.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']
         self.hidden_dim = params['hidden_dim']
         self.lstm_dim = params['lstm_dim']
-        self.dropout = params['dropout']
-        self.embeddings = data_obj.word_embeds
-        self.lstm = nn.LSTM(self.embedding_dim, self.lstm_dim)
+        self.dropout = params['dropout'] 
+        self.embeddings = data_obj.word_embeds # couche pour générer les word embeddings
+        self.lstm = nn.LSTM(self.embedding_dim, self.lstm_dim) # couche LSTM pour générer les representation vectorielle des phrases
         self.hidden = None
-        self.hidden_layer = nn.Linear(50, self.hidden_dim)
-        if params['task'] == 'perm':
-            num_labels = 2
-        elif params['task'] == 'minority':
-            num_labels = 2
-        elif params['task'] == 'class':
+        self.hidden_layer = nn.Linear(50, self.hidden_dim) 
+
+        if params['task'] == 'class':
             num_labels = 3
         elif params['task'] == 'score_pred':
             num_labels = 1
+
         self.max_len = 50  # used for padding
-        self.predict_layer = nn.Linear(self.hidden_dim, num_labels)
+        self.predict_layer = nn.Linear(self.hidden_dim, num_labels) # couche de prédiction du score de cohérence des documents du batch
         self.bn = nn.BatchNorm1d(self.hidden_dim)
 
-        # weight initialization
+        # initialisation des poids
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 m.bias.data.zero_()
@@ -67,18 +65,17 @@ class LSTMSentAvg(nn.Module):
                 seq_tensor, input_lengths[i], batch_first=True)
             # représentation des phrases
             packed_output, (ht, ct) = self.lstm(packed_input, self.hidden)
-            # reorder
+            # réordonner
             final_output = ht[-1]
             odx = original_index[i].view(-1, 1).expand(
                 len(input_lengths[i]), final_output.size(-1))
             output_unsorted = torch.gather(final_output, 0, Variable(odx))
 
             # boucler sur le nombre de phrase dans un document, telle que dans chaque
-            # itération on calcule le vecteur f entre 2 phrases adjacentes
+            # itération on calcule le vecteur de similarité cosine (f) entre 2 phrases adjacentes
             size = list(output_unsorted.size())
 
-            # calculer les degrès de continuité entre les fi du tensor précedent et construire un vecteur qui les regroupent.
-            deg_vec = []
+            deg_vec = [] # vecteur des similarités cosine entre les phrases d'un seul document
 
             if(size[0]==1):
                 deg_vec.append(1)
@@ -86,27 +83,28 @@ class LSTMSentAvg(nn.Module):
                 for i in range(size[0] - 1):
                     deg = nn.CosineSimilarity(dim=0, eps=1e-8)(output_unsorted[i], output_unsorted[i+1])
                     deg = deg.detach().numpy().item()
-                    # vecteur de degrés de continuité
+                    # vecteur des similarités cosine
                     deg_vec.append(deg)
                     
-            # calculer la moyenne des degrés de continuité d'un document
+            # calculer la moyenne des similarités cosine d'un document (utilisé pour la reprentation graphique)
             
             if(len(deg_vec) > 0):
                 avg_deg= sum(deg_vec)/len(deg_vec)
+                #Concaténation des moyennes de similarités cosine de tous les documents
                 global_avg_deg.append(avg_deg)
-            # Padding du vecteur de degré de continuité
+
+            # Padding du vecteur de similarité cosine
             pad_deg = np.zeros(self.max_len)
             deg_vec = np.array(deg_vec)
             pad_deg[:deg_vec.size] = deg_vec
             global_deg_vec.append(pad_deg)
-            # append to get the avg deg vector of all documents 
             
         global_deg_vec = torch.FloatTensor(global_deg_vec)
         global_deg_vec = global_deg_vec.squeeze(1)
 
         global_vectors = F.dropout(self.bn(F.relu(self.hidden_layer(
             global_deg_vec))), p=self.dropout, training=self.training)
-
+        # La prédiction de cohérence pour chaque document du batch
         coherence_pred = self.predict_layer(global_vectors)
 
         if self.task != 'score_pred':

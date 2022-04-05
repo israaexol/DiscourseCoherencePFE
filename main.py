@@ -7,10 +7,6 @@ from LSTMParSeq import LSTMParSeq
 from LSTMSemRel import LSTMSemRel
 from CNNPosTag import CNNPosTag
 from train_neural_models import *
-# import matplotlib.pyplot as plt
-# from numpy import *
-# import math
-
 
 sys.path.insert(0, os.getcwd())
 
@@ -21,20 +17,16 @@ run_dir = os.path.join(root_dir, "runs")
 
 parser = argparse.ArgumentParser()
 
-# data
-# class [classification], perm [binary permutation], score_pred [mean score prediction], minority [minority binary classification]
 parser.add_argument("--task", type=str, default="class")
 
 # model params
 parser.add_argument("--model_type", type=str,
-                    default="clique")  # clique, doc_seq
+                    default="sent_avg")  # clique, doc_seq
 parser.add_argument("--learning_rate", type=float, default=0.001)
 parser.add_argument("--dropout", type=float, default=0)
 parser.add_argument("--lstm_dim", type=int, default=100)
 parser.add_argument("--hidden_dim", type=int, default=200,
                     help="hidden layer dimension")
-# number of sentences in each clique (clique model only)
-parser.add_argument("--clique", type=int, default=3)
 parser.add_argument("--l2_reg", type=float, default=0)
 
 # training
@@ -64,6 +56,8 @@ parser.add_argument("--cross_val", type=int,
                     default=0, help="Use the cross validation setting")
 parser.add_argument("--pos_tag", type=int,
                     default=0, help="Use the pos tag setting")
+parser.add_argument("--tag_filter", type=int,
+                    default=0, help="POS Tag filtering is used")
 
 args = parser.parse_args()
 if args.model_name is None:
@@ -94,12 +88,12 @@ params = {
     'dropout': args.dropout,  # 1 = no dropout, 0.5 = dropout
     'hidden_dim': args.hidden_dim,
     'lstm_dim': args.lstm_dim,
-    'clique_size': args.clique,
     'l2_reg': args.l2_reg,
     'batch_size': args.batch_size,
     'num_epochs': args.num_epochs,
     'cross_val' : args.cross_val,
-    'pos_tag' : args.pos_tag
+    'pos_tag' : args.pos_tag,
+    'tag_filter' : args.tag_filter
     
 }
 
@@ -127,50 +121,66 @@ if params['vector_type'] != 'none':
     vectors, vector_dim = data.load_vectors()
     params['embedding_dim'] = vector_dim
 
-if params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'fusion_sem_syn' :
+# dev_docs = None
+if params['vector_type'] == 'none':  # init random vectors
+    vectors = data.rand_vectors(len(data.word_to_idx))
+
+# Modèle de classification de la fusion entre le niveau sémantique et syntaxique avec validation croisée
+if params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'fusion_sem_syn' and params['pos_tag'] == 1 :
     data_docs_cnn = data.read_data_class_cv_tag(params)
     data_docs_sem = data.read_data_class_cv(params)
     model_cnn = CNNPosTag(params, data)
     model_sem = LSTMSemRel(params, data)
     train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_sem)
-elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'cnn_pos_tag' :
+
+# Modèle de classification du niveau syntaxique avec la validation croisée
+elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'cnn_pos_tag' and params['pos_tag'] == 1 :
     data_docs = data.read_data_class_cv_tag(params)
-    model = CNNPosTag(params, data) #parseq
-    train_cv(params, data_docs, data, model) #train
-if params['cross_val'] == 1 and params['task'] == 'class' :
-    data_docs = data.read_data_class_cv(params)
-elif params['pos_tag'] == 1 and params['task'] == 'class':
+    model = CNNPosTag(params, data) 
+    train_cv(params, data_docs, data, model)
+
+# Modèle de classification du niveau syntaxique
+elif params['cross_val'] == 0 and params['pos_tag'] == 1 and params['task'] == 'class' and params['model_type'] == 'cnn_pos_tag':
     training_docs = data.read_data_class_tag(params, 'train')
     test_docs = data.read_data_class_tag(params, 'test')
-    model = LSTMParSeq(params, data) #parseq
-    #model = CNNPosTag(params, data) #parseq
-    train_test(params, training_docs, test_docs, data, model) #train
-elif params['task'] == 'class' or params['task'] == 'score_pred' or params['task'] == 'minority':
+    model = CNNPosTag(params, data)
+    train(params, training_docs, test_docs, data, model)
+
+# Modèle de classification du niveau sémantique pour capturer la transition entre les phrases seulement avec la validation croisée
+elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'sent_avg':
+    data_docs = data.read_data_class_cv(params)
+    model = LSTMSentAvg(params, data)
+    train_cv(params, data_docs, data, model)
+    
+# Modèle de classification du niveau sémantique pour capturer la transition entre les phrases seulement
+elif params['cross_val'] == 0 and params['task'] == 'class' and params['model_type'] == 'sent_avg':
     training_docs = data.read_data_class(params, 'train')
     test_docs = data.read_data_class(params, 'test')
-else:
-    training_docs = data.read_data_perm(params, 'train')
-    test_docs = data.read_data_perm(params, 'test')
-# dev_docs = None
-if params['vector_type'] == 'none':  # init random vectors
-    vectors = data.rand_vectors(len(data.word_to_idx))
+    model = LSTMSentAvg(params, data)
+    best_test_acc = train(params, training_docs, test_docs, data, model)
 
-# if params['model_type'] == 'clique':
-#     model = LSTMClique(params, data)
-#     train(params, training_docs, test_docs, data, model)
-# elif params['model_type'] == 'sent_avg':
-#     model = LSTMSentAvg(params, data)
-#     best_test_acc = train(params, training_docs, test_docs, data, model)
-   
-# elif params['model_type'] == 'par_seq':
-#     model = LSTMParSeq(params, data)
-#     train(params, training_docs, test_docs, data, model)
-# elif params['model_type'] == 'sem_rel' and params['cross_val']==1:
-#     model = LSTMSemRel(params, data)
-#     train_cv(params, data_docs, data, model)
-# elif params['model_type'] == 'sem_rel_prod' and params['cross_val']==1:
-#     model = LSTMSemRel_Prod(params, data)
-#     train_prod(params, data_docs, data, model)
-# elif params['model_type'] == 'sem_rel':
-#     model = LSTMSemRel(params, data)
-#     train(params, training_docs, test_docs, data, model)
+# Modèle de classification du niveau sémantique pour capturer la transition entre les paragraphes avec la validation croisée
+elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'par_seq':
+    data_docs = data.read_data_class_cv(params)
+    model = LSTMParSeq(params, data)
+    train_cv(params, data_docs, data, model)
+    
+# Modèle de classification du niveau sémantique pour capturer la transition entre les paragraphes
+elif params['cross_val'] == 0 and params['task'] == 'class' and params['model_type'] == 'par_seq':
+    training_docs = data.read_data_class(params, 'train')
+    test_docs = data.read_data_class(params, 'test')
+    model = LSTMParSeq(params, data)
+    best_test_acc = train(params, training_docs, test_docs, data, model)
+
+# Modèle de classification de la fusion du niveau sémantique entre les phrases et les paragraphes avec la validation croisée
+elif params['model_type'] == 'sem_rel' and params['cross_val'] == 1 and params['task'] == 'class':
+    data_docs = data.read_data_class_cv(params)
+    model = LSTMSemRel(params, data)
+    train_cv(params, data_docs, data, model)
+
+# Modèle de classification de la fusion du niveau sémantique entre les phrases et les paragraphes
+elif params['model_type'] == 'sem_rel' and params['cross_val'] == 0 and params['task'] == 'class':
+    training_docs = data.read_data_class(params, 'train')
+    test_docs = data.read_data_class(params, 'test')
+    model = LSTMSemRel(params, data)
+    train(params, training_docs, test_docs, data, model)

@@ -18,7 +18,7 @@ class LSTMSemRel(nn.Module):
 
     def __init__(self, params, data_obj):
         super(LSTMSemRel, self).__init__()
-        sys.stdout = open('semrel_GCDC_class_cv10.txt', 'w')
+        sys.stdout = open('fusion_GCDC_class_cv10.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']
@@ -62,14 +62,14 @@ class LSTMSemRel(nn.Module):
 
     def forward(self, inputs, input_lengths, original_index, weights=None):
         doc_vecs = None
-        global_cosine_sent = [] # le degré de continuité de tous les documents d'un seul batch
-        global_avg_cosine_sent = [] # les moyennes des cosine similarity des phrases d'un document
+        global_cosine_sent = [] # les similarités cosines de tous les documents d'un seul batch
+        global_avg_cosine_sent = [] # les moyennes des similarités cosines des phrases d'un document
         
-        global_cosine_par = [] # le degré de continuité de tous les documents d'un seul batch
-        global_avg_cosine_par = [] # les moyennes des cosine similarity des paragraphes d'un document
+        global_cosine_par = [] # les similarités cosines de tous les documents d'un seul batch
+        global_avg_cosine_par = [] # les moyennes des similarités cosines des paragraphes d'un document
         for i in range(len(inputs)): # itérer sur les documents
             par_vecs = None
-            # récupérer les phrases par document
+            # Utilisée pour récupérer les phrases par document
             sentences_from_doc = torch.empty(0)
             for j in range(len(inputs[i])): # itérer sur les paragraphes
                 doc_batch_size = len(inputs[i][j]) # nombre de phrases
@@ -79,7 +79,7 @@ class LSTMSemRel(nn.Module):
                 packed_input = pack_padded_sequence(seq_tensor, input_lengths[i][j], batch_first=True)                
                 # génération des représentations de phrases à partir des word embeddings
                 packed_output, (ht, ct) = self.word_lstm(packed_input, self.word_lstm_hidden)
-                # reorder
+                # réordonner
                 final_output = ht[-1]
                 odx = original_index[i][j].view(-1, 1).expand(len(input_lengths[i][j]), final_output.size(-1))
 
@@ -92,13 +92,15 @@ class LSTMSemRel(nn.Module):
                 # génération des représentations de paragraphes à partir de celles des phrases
                 output_pars, (ht, ct) = self.sent_lstm(output_unsorted, self.sent_lstm_hidden)
                 final_output = ht[-1]
+                
                 # concaténer les vecteurs de paragraphes
                 if par_vecs is None:
                     par_vecs = final_output
                 else:
                     par_vecs = torch.cat([par_vecs, final_output], dim=0)
             
-                ####################### COSINE SIMILARITY NIVEAU PHRASES ##############################
+            
+            ####################### SIMILARITÉS COSINES NIVEAU PHRASES ##############################
             sent_size = list(sentences_from_doc.size())
             cosineSim_sent_doc = []
 
@@ -108,23 +110,25 @@ class LSTMSemRel(nn.Module):
                 for i in range(sent_size[0] - 1):
                     cosine_sent = nn.CosineSimilarity(dim=0, eps=1e-8)(sentences_from_doc[i], sentences_from_doc[i+1])
                     cosine_sent = cosine_sent.detach().numpy().item()
-                    # vecteur de degrés de continuité
+                    # vecteur de similarités cosine
                     cosineSim_sent_doc.append(cosine_sent)
 
             if(len(cosineSim_sent_doc) > 0):
                 avg_cosine= sum(cosineSim_sent_doc)/len(cosineSim_sent_doc)
                 global_avg_cosine_sent.append(avg_cosine)
+            
+            # padding et concaténation
             pad_cosine = np.zeros(self.max_len)
             cosineSim_sent_doc = np.array(cosineSim_sent_doc)
             pad_cosine[:cosineSim_sent_doc.size] = cosineSim_sent_doc
             global_cosine_sent.append(pad_cosine)
             
-                ####################### COSINE SIMILARITY NIVEAU PARAGRAPHES ##############################
+            ####################### COSINE SIMILARITY NIVEAU PARAGRAPHES ##############################
             # représentations des paragraphes par document
 
             par_vecs = par_vecs.squeeze(1)
             par_size = par_vecs.size()           
-            cosineSim_par_doc = [] #cosine similarity entre les paragraphes adjacents d'un document
+            cosineSim_par_doc = [] #similarités cosine entre les paragraphes adjacents d'un document
 
             if(par_size[0]==1):
                 cosineSim_par_doc.append(1)
@@ -135,24 +139,23 @@ class LSTMSemRel(nn.Module):
                     # vecteur de degrés de continuité d'un seul document
                     cosineSim_par_doc.append(cosine_par)
 
-            if(len(cosineSim_par_doc) > 0): # vecteur de degrés de continuité d'un seul document
-                avg_cosine = sum(cosineSim_par_doc)/len(cosineSim_par_doc) # moyenne des degrés de continuité d'un seul document 
-                global_avg_cosine_par.append(avg_cosine) # concaténer pour avoir les moyennes des degrés de continuité de tous les document 
+            if(len(cosineSim_par_doc) > 0): # vecteur de similarités cosines d'un seul document
+                avg_cosine = sum(cosineSim_par_doc)/len(cosineSim_par_doc) # moyenne des similarités cosine d'un seul document 
+                global_avg_cosine_par.append(avg_cosine) # concaténer pour avoir les moyennes des similarités cosines de tous les documents
          
-            #padding 
-
+            # padding et concaténation
             pad_cosine_par = np.zeros(self.max_len)
             cosineSim_par_doc = np.array(cosineSim_par_doc)
             pad_cosine_par[:cosineSim_par_doc.size] = cosineSim_par_doc
             global_cosine_par.append(pad_cosine_par)
-            print(global_cosine_par)
             
         #Prédiction niveau phrases
         global_cosine_sent = torch.FloatTensor(global_cosine_sent)
         global_cosine_sent  = global_cosine_sent.squeeze(1)
         global_vectors_sent = F.dropout(self.bn(F.relu(self.hidden_layer(global_cosine_sent))), p=self.dropout, training=self.training)
         coherence_pred_sent = self.predict_layer(global_vectors_sent)
-
+        
+        # Tâche de classification
         coherence_pred_sent = F.softmax(coherence_pred_sent, dim=0)
         coherence_pred_sentTensor = coherence_pred_sent
     
@@ -166,16 +169,15 @@ class LSTMSemRel(nn.Module):
 
         coherence_pred_par = F.softmax(coherence_pred_par, dim=0)
         coherence_pred_parTensor = coherence_pred_par
-       
-        #coherence_pred_sent = coherence_pred_sent.tolist()
-        #coherence_pred_par = coherence_pred_par.tolist()
-
+        
         #Prédiction finale à partir de celles des deux niveaux
-        if(weights is None):
+        if(weights is None): # si les prédictions du niveau phrases et paragraphes ne sont pas encore attribués des poids
             return coherence_pred_sent, coherence_pred_par
-        # else:
-        #     coherence_pred_sent = torch.mul(coherence_pred_sentTensor, weights[0])
-        #     coherence_pred_par = torch.mul(coherence_pred_parTensor, weights[1])
-        #     final_prediction = coherence_pred_sent.add(coherence_pred_par)
-        #     return final_prediction
+        else:
+            coherence_pred_sent = coherence_pred_sent.tolist()
+            coherence_pred_par = coherence_pred_par.tolist()
+            coherence_pred_sent = torch.mul(coherence_pred_sentTensor, weights[0])
+            coherence_pred_par = torch.mul(coherence_pred_parTensor, weights[1])
+            final_prediction = coherence_pred_sent.add(coherence_pred_par)
+            return final_prediction
            
