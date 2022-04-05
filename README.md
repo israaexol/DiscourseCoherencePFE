@@ -37,21 +37,25 @@ python main.py --model_name parseq_model --train_corpus GCDC --model_type par_se
 * Avec la validation croisée :
 ```
 python main.py --model_name parseq_model --train_corpus GCDC_cv --model_type par_seq --task class --cross_val 1
-
+```
 3) Combinaison des deux niveaux (SEM_REL)
 * Sans la validation croisée :
 ```
 python main.py --model_name semrel_model --train_corpus GCDC --model_type sem_rel --task class
+```
 
 * Avec la validation croisée :
 ```
 python main.py --model_name semrel_model --train_corpus GCDC_cv --model_type sem_rel --task class --cross_val 1
+```
 
 ## Niveau syntaxique (CNN_POS_TAG)
 * Sans la validation croisée :
 ```
 python main.py --model_name cnn_postag_model --train_corpus GCDC --model_type cnn_pos_tag --task class --pos_tag 1
+```
 
 * Avec la validation croisée :
 ```
 python main.py --model_name cnn_postag_model --train_corpus GCDC_cv --model_type cnn_pos_tag --task class --pos_tag 1 --cross_val 1
+```
