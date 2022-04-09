@@ -1,0 +1,71 @@
+#header {
+    position: fixed;
+    top:0;
+    right:0;
+    width: 400px;
+    background-color: #E4ECFF;
+    font-family: 'Didact Gothic';
+  }
+#header .pro-sidebar {
+height: 100vh;
+font-family: 'Didact Gothic';
+
+}
+#header .pro-sidebar {
+width: 100%;
+min-width: 100%;
+
+}
+
+.parent {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+.child {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+    width: 80px;
+}
+
+.child2 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+    width: 90px;
+}
+
+.child3 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+    width: 110px;
+}
+
+.logo {
+    float: left;
+    margin-right: 3px;
+    height: 25%;
+    width: 25%;
+}
+
+.logo2 {
+    float: left;
+    margin-right: 3px;
+    height: 21%;
+    width: 21%;
+}
+
+@media only screen and (max-width: 720px) {
+html {
+    overflow: hidden;
+}
+}

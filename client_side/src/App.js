@@ -1,26 +1,19 @@
 import './App.css';
 import {Accueil, Apropos} from './Component';
-import { Router, Switch, Route, Redirect, BrowserRouter } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = () => {
   return (
-    <div className="App">
-      <Router>
-        <Switch>
-          {
-            <>
-              <Route path='/accueil'>
-                <Accueil/>
-              </Route>
+    <Router>
+        <Routes>
+            <Route path='/' element={<Accueil/>}/>
+            
+            <Route path='/accueil' element={<Accueil/>}/>
 
-              <Route path='/apropos'>
-                <Apropos/>
-              </Route>
-            </>
-          }
-        </Switch>
-      </Router>
-    </div>
+            <Route path='/apropos' element={<Apropos/>}/>
+        </Routes>
+    </Router>
+      
   );
 }
 
