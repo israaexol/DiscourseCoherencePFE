@@ -4,8 +4,9 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = () => {
   return (
+    <>
+    <Navbar/>
     <Router>
-        <Navbar/>
         <Routes>
             <Route path='/' element={<Accueil/>}/>
             
@@ -13,7 +14,8 @@ const App = () => {
 
             <Route path='/apropos' element={<Apropos/>}/>
         </Routes>
-    </Router>      
+    </Router>  
+    </>    
   );
 }
 
