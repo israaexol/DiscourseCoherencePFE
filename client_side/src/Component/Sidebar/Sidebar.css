@@ -1,5 +1,6 @@
 #header {
-    position: fixed;
+    position:relative;
+    float: right;
     top:0;
     right:0;
     width: 400px;

@@ -1,10 +1,11 @@
 import './App.css';
-import {Accueil, Apropos} from './Component';
+import {Accueil, Apropos, Navbar} from './Component';
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 const App = () => {
   return (
     <Router>
+        <Navbar/>
         <Routes>
             <Route path='/' element={<Accueil/>}/>
             
@@ -12,8 +13,7 @@ const App = () => {
 
             <Route path='/apropos' element={<Apropos/>}/>
         </Routes>
-    </Router>
-      
+    </Router>      
   );
 }
 
