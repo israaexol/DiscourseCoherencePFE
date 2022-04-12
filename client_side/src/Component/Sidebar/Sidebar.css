@@ -1,21 +1,21 @@
 #header {
-    position:relative;
+    position: relative;
     float: right;
-    top:0;
-    right:0;
+    top: 0;
+    right: 0;
     width: 400px;
     background-color: #E4ECFF;
     font-family: 'Didact Gothic';
-  }
-#header .pro-sidebar {
-height: 100vh;
-font-family: 'Didact Gothic';
-
 }
-#header .pro-sidebar {
-width: 100%;
-min-width: 100%;
 
+#header .pro-sidebar {
+    height: 100vh;
+    font-family: 'Didact Gothic';
+}
+
+#header .pro-sidebar {
+    width: 100%;
+    min-width: 100%;
 }
 
 .parent {
@@ -66,7 +66,7 @@ min-width: 100%;
 }
 
 @media only screen and (max-width: 720px) {
-html {
-    overflow: hidden;
-}
+    html {
+        overflow: hidden;
+    }
 }

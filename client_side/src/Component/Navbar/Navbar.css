@@ -1,47 +1,47 @@
-#navbar{
+#navbar {
     display: flex;
     justify-content: space-between;
-    align-items: center; 
-    padding: 1rem ; 
+    align-items: center;
+    padding: 1rem;
     background-color: #5885FB;
-
 }
-.navbar_logo img{
+
+.navbar_logo img {
     width: 6%;
     height: 11%;
-    margin-right : 6%;
-
+    margin-right: 6%;
 }
-.navbar_logo{
+
+.navbar_logo {
     font-family: 'Pacifico';
     font-size: 250%;
     color: #fff;
 }
-.navbar_menu{
+
+.navbar_menu {
     display: flex;
     flex-direction: row;
+    padding-left: 25%;
 }
 
-.navbar_links{
-    flex:1;
+.navbar_links {
+    flex: 1;
     display: flex;
     align-items: center;
 }
-.navbar_menu p a{
 
+.menu_div {
+    width: 220px;
+}
+
+.navbar_menu p a {
+    display: inline;
     color: #fff;
     font-family: 'Roboto';
     font-weight: 700;
     font-size: 120%;
-    line-height: 25px;
     text-transform: capitalize;
-    margin: 0rem 4rem; 
     cursor: pointer;
-    text-decoration: none;    
+    text-decoration: none;
 }
-
-.navbar_menu{
-    padding-left: 31rem;
-}
-
 
