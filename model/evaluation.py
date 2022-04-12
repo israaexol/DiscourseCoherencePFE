@@ -54,9 +54,9 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
             y_pred = []
             test_pred_sent, test_pred_par = model(batch_padded, batch_lengths, original_index)
             # Regrouper les prédictions du niveau phrases et les prédictions du niveau paragraphes dans un seul tableau
-            y_pred.append(test_pred_sent)
-            y_pred.append(test_pred_par)
-            y_pred = np.array(y_pred)
+            y_pred.append(test_pred_sent.detach().numpy())
+            y_pred.append(test_pred_par.detach().numpy())
+            #y_pred = np.array(y_pred)
             for weights in product(w, repeat=2):
                 # Si les poids sont égaux
                 if len(set(weights)) == 1:
@@ -84,24 +84,25 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
             eval_labels.extend(orig_batch_labels)
             loss += loss_fn(batch_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
             eval_pred.extend(list(np.argmax(batch_pred.cpu().data.numpy(), axis=1)))      
-        else:
+        elif params['model_type']=='sent_avg' or params['model_type']=='par_seq':
             batch_pred, avg_deg_test = model(batch_padded, batch_lengths, original_index)
-            # print("=========== BATCH PRED ===========")
-            # print(batch_pred)
             global_avg_deg_test += avg_deg_test
             eval_labels.extend(orig_batch_labels)
-            # print("=========== EVAL LABELS ===========")
-            # print(eval_labels)
             if params['task'] == 'score_pred':
                 loss += loss_fn(batch_pred, Variable(FloatTensor(orig_batch_labels))).cpu().data.numpy()
                 eval_pred.extend(list(batch_pred.cpu().data.numpy())) 
             else:
                 loss += loss_fn(batch_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
                 eval_pred.extend(list(np.argmax(batch_pred.cpu().data.numpy(), axis=1)))
-                # print("===============Eval pred size================")
-                # print(len(eval_pred))
-                # print("=========== EVAL PRED ===========")
-                # print(eval_pred)
+        else:
+            batch_pred = model(batch_padded, batch_lengths, original_index)
+            eval_labels.extend(orig_batch_labels)
+            if params['task'] == 'score_pred':
+                loss += loss_fn(batch_pred, Variable(FloatTensor(orig_batch_labels))).cpu().data.numpy()
+                eval_pred.extend(list(batch_pred.cpu().data.numpy())) 
+            else:
+                loss += loss_fn(batch_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
+                eval_pred.extend(list(np.argmax(batch_pred.cpu().data.numpy(), axis=1)))
              
     if params['task'] == 'score_pred':
         mse = np.square(np.subtract(np.array(eval_pred), np.expand_dims(np.array(eval_labels), 1))).mean()
@@ -128,7 +129,7 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
         print((acc_low + acc_medium + acc_high)/3) 
         print("Classification report :")
         print(metrics.classification_report(eval_labels, eval_pred, labels=[0, 1, 2], zero_division=1))
-    if params["model_type"] == 'sem_rel' or params['model_type']=='sem_rel_prod':
+    if params["model_type"] == 'sem_rel' or params['model_type']=='cnn_pos_tag':
         return accuracy, loss
     else:
         return accuracy, loss, eval_pred, global_avg_deg_test

@@ -1,14 +1,11 @@
 import * as React from 'react'
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import "./Sidebar.css";
 import { experimentalStyled as styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
-import Grid from '@mui/material/Grid';
 import Link from '@mui/material/Link';
 
 //import react pro sidebar components
@@ -26,8 +23,6 @@ import anaconda from '../../assets/anaconda.png'
 import vscode from '../../assets/vscode.png'
 import scikitlearn from '../../assets/scikitlearn.png'
 import github from '../../assets/github.png'
-
-//const preventDefault = (event: React.SyntheticEvent) => event.preventDefault();
 
 const Item = styled(Paper)(({ theme }) => ({
 ...theme.typography.body1,
@@ -61,7 +56,7 @@ const Sidebar = () => {
                     justifyContent: 'space-between'
                     }}
                 >
-                    <Item sx={{ backgroundColor: '#CADCF1', borderRadius: 2, width: '70px', height: '12px' }}>
+                    <Item sx={{ backgroundColor: '#CADCF1', borderRadius: 2, width: '95px', height: '12px' }}>
                         <div class='parent'>
                             <div class='child'>
                                 <img src={python} class='logo'></img>
@@ -69,7 +64,7 @@ const Sidebar = () => {
                             </div>
                         </div>
                     </Item>
-                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '90px', height: '12px' }}>
+                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '125px', height: '12px' }}>
                         <div class='parent'>
                             <div class='child3'>
                                 <img src={scikitlearn} class='logo'></img>
@@ -77,7 +72,7 @@ const Sidebar = () => {
                             </div>
                         </div>
                     </Item>
-                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '70px', height: '12px' }}>
+                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '95px', height: '12px' }}>
                         <div class='parent'>
                             <div class='child'>
                                 <img src={numpy} class='logo'></img>
@@ -96,7 +91,7 @@ const Sidebar = () => {
                     alignItems: 'flex-start'
                     }}
                 >
-                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '70px', height: '12px' }}>
+                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '95px', height: '12px' }}>
                         <div class='parent'>
                             <div class='child'>
                                 <img src={vscode} class='logo'></img>
@@ -104,7 +99,7 @@ const Sidebar = () => {
                             </div>
                         </div>
                     </Item>
-                    <Item sx={{ backgroundColor: '#FFF27B', borderRadius: 2, width: '85px', height: '12px' }}>
+                    <Item sx={{ backgroundColor: '#FFF27B', borderRadius: 2, width: '125px', height: '12px' }}>
                         <div class='parent'>
                             <div class='child2'>
                                 <img src={anaconda} class='logo2'></img>
@@ -112,7 +107,7 @@ const Sidebar = () => {
                             </div>
                         </div>
                     </Item>
-                    <Item sx={{ backgroundColor: '#FFE1E1', borderRadius: 2, width: '70px', height: '12px' }}>
+                    <Item sx={{ backgroundColor: '#FFE1E1', borderRadius: 2, width: '95px', height: '12px' }}>
                         <div class='parent'>
                             <div class='child'>                            
                                 <img class='logo' src={pytorch}></img>
@@ -136,18 +131,20 @@ const Sidebar = () => {
             <SidebarFooter>
             <Box
             sx={{
-                typography: 'body1',
-                '& > :not(style) + :not(style)': {
-                ml: 2,
-                },
+                display: 'flex',
+                flexDirection: 'row',
+                p: 1,
+                m: 1,
+                justifyContent: 'flex-start',
+                alignItems: 'flex-start'
             }}
             >
-                <Menu>
-                    <MenuItem>
-                        <img src={github} height='7%' width='7%' style={{'float': 'left', 'marginRight': '3%'}}></img>
-                        <Link href="https://github.com/israaexol/DiscourseCoherencePFE"><Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic' }}>Répertoire GitHub</Typography></Link>
-                    </MenuItem>
-                </Menu>
+                <div class='parent'>
+                    <div class='child3'></div>
+                        <img src={github} height='7%' width='7%' class="logo3"></img>
+                        <Link href="https://github.com/israaexol/DiscourseCoherencePFE"><Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic', marginLeft: '20px' }}>Répertoire GitHub</Typography></Link>
+                    </div>
+                <div/>
             </Box>
             </SidebarFooter>
         </ProSidebar>

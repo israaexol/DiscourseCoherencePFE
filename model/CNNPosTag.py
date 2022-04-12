@@ -16,7 +16,7 @@ class CNNPosTag(nn.Module):
     def __init__(self, params, data_obj):
         super(CNNPosTag, self).__init__()
         self.params = params
-        sys.stdout = open('CNNPosTag_CV_RichLex.txt', 'w')
+        sys.stdout = open('CNNPosTag_CV.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']
@@ -24,33 +24,32 @@ class CNNPosTag(nn.Module):
         self.cnn_dim = params['lstm_dim']
         self.embeddings = data_obj.word_embeds
 
-        #self.kernel_1 = 2
         self.kernel_1 = 1
-        
         self.kernel_2 = 2
         self.kernel_3 = 3
         self.kernel_4 = 4
-        self.kernel_5 = 5
-        self.num_filters=[100]
+        #self.kernel_5 = 5
+        self.num_filters=[100, 100, 100, 100]
         self.num_classes = 3
 
         # Number of strides for each convolution
         self.stride = 2
 
-        #self.conv_1 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_1, self.stride)
-        # self.conv_2 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_2, self.stride)
-        # self.conv_3 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_3, self.stride)
-        # self.conv_4 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_4, self.stride)
-        # self.conv_5 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_5, self.stride)
+        # self.conv_1 = nn.Conv2d(1, 100, (self.kernel_1, self.embedding_dim), padding=(1,0))    
+        # self.conv_2 = nn.Conv2d(1, 100, (self.kernel_2, self.embedding_dim), padding=(0,0))
+        # self.conv_3 = nn.Conv2d(1, 100, (self.kernel_3, self.embedding_dim), padding=(1,0))
+        # self.conv_4 = nn.Conv2d(1, 100, (self.kernel_4, self.embedding_dim), padding=(2,0))
+        
+        #self.conv_5 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_5, self.stride)
 
         # Dans le cas d'utilisation d'un ensemble filtré de tags
         if params['tag_filter'] == 1:
             self.conv_1 = nn.Conv2d(1, 100, (self.kernel_1, self.embedding_dim), padding=(1,0))    
         else : 
-            self.conv_1 = nn.Conv2d(1, 100, (self.kernel_1, self.embedding_dim), padding=(1,0))    
-            self.conv_2 = nn.Conv2d(1, 100, (self.kernel_2, self.embedding_dim), padding=(0,0))
-            self.conv_3 = nn.Conv2d(1, 100, (self.kernel_3, self.embedding_dim), padding=(1,0))
-            self.conv_4 = nn.Conv2d(1, 100, (self.kernel_4, self.embedding_dim), padding=(2,0))
+            self.conv_1 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_1, self.stride)
+            self.conv_2 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_2, self.stride)
+            self.conv_3 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_3, self.stride)
+            self.conv_4 = nn.Conv1d(self.embedding_dim, self.cnn_dim, self.kernel_4, self.stride)
             #self.conv_5 = nn.Conv2d(1, 100, (self.kernel_5, self.embedding_dim), padding=(3,0))
         
         # La définition d'une couche Fully connected
@@ -76,31 +75,31 @@ class CNNPosTag(nn.Module):
             return (Variable(torch.zeros(1, batch_size, self.cnn_dim)),
                     Variable(torch.zeros(1, batch_size, self.cnn_dim)))
 
-    def forward(self, inputs, input_lengths, original_index):
+    def forward(self, inputs, input_lengths, original_index, dim=0):
         global_coherence_pred = None
         for i in range(len(inputs)):  # Itérer sur les documents
             doc_batch_size = len(inputs[i])  # nombre de phrases
             self.hidden = self.init_hidden(doc_batch_size)
             seq_tensor = self.embeddings(inputs[i])
-            seq_tensor = seq_tensor.unsqueeze(1)
+            #seq_tensor = seq_tensor.unsqueeze(1)
             
             #if conv1D
-            #seq_tensor = seq_tensor.permute(0, 2, 1)
+            seq_tensor = seq_tensor.permute(0, 2, 1)
 
             if self.params['tag_filter'] == 1:
                 x1=F.relu(self.conv_1(seq_tensor)).squeeze(3)
                 x1=F.max_pool1d(x1, kernel_size=x1.shape[2]).squeeze(2)
                 union = x1
             else: 
-                x1=F.relu(self.conv_1(seq_tensor)).squeeze(3)
+                x1=F.relu(self.conv_1(seq_tensor))
                 x1=F.max_pool1d(x1, kernel_size=x1.shape[2]).squeeze(2)
                 
                 # Appliquer Convolution layer 2
-                x2=F.relu(self.conv_2(seq_tensor)).squeeze(3)
+                x2=F.relu(self.conv_2(seq_tensor))
                 x2=F.max_pool1d(x2, kernel_size=x2.shape[2]).squeeze(2)
                 
                 # Appliquer Convolution layer 3
-                x3=F.relu(self.conv_3(seq_tensor)).squeeze(3)
+                x3=F.relu(self.conv_3(seq_tensor))
                 x3=F.max_pool1d(x3, kernel_size=x3.shape[2]).squeeze(2)
             
                 # Appliquer Convolution layer 4
@@ -126,5 +125,5 @@ class CNNPosTag(nn.Module):
                 global_coherence_pred = torch.cat([global_coherence_pred, out], dim=0)
 
         # Pour la classification
-        coherence_pred = F.softmax(global_coherence_pred, dim=0)
+        coherence_pred = F.softmax(global_coherence_pred, dim=dim)
         return coherence_pred

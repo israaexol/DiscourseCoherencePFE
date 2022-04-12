@@ -7,6 +7,7 @@ from LSTMParSeq import LSTMParSeq
 from LSTMSemRel import LSTMSemRel
 from CNNPosTag import CNNPosTag
 from train_neural_models import *
+import pickle
 
 sys.path.insert(0, os.getcwd())
 
@@ -117,6 +118,8 @@ if params['vector_type'] == 'glove':
 # load data
 data = Data(params)
 vectors = None
+# embeddings = pickle.load(open('../model/word_embeds.pkl', 'rb'))
+# data.word_embeds = embeddings
 if params['vector_type'] != 'none':
     vectors, vector_dim = data.load_vectors()
     params['embedding_dim'] = vector_dim

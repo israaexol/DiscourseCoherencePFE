@@ -53,7 +53,7 @@ class LSTMSentAvg(nn.Module):
             return (Variable(torch.zeros(1, batch_size, self.lstm_dim)),
                     Variable(torch.zeros(1, batch_size, self.lstm_dim)))
 
-    def forward(self, inputs, input_lengths, original_index):
+    def forward(self, inputs, input_lengths, original_index, dim = 0):
         global_deg_vec = []
         global_avg_deg =[]
         for i in range(len(inputs)):  # itérer sur les documents
@@ -108,5 +108,5 @@ class LSTMSentAvg(nn.Module):
         coherence_pred = self.predict_layer(global_vectors)
 
         if self.task != 'score_pred':
-            coherence_pred = F.softmax(coherence_pred, dim=0) #prédiction
+            coherence_pred = F.softmax(coherence_pred, dim=dim) #prédiction
         return coherence_pred, global_avg_deg

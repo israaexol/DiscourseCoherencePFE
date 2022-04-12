@@ -8,7 +8,6 @@ from torch.autograd import Variable
 from nltk import word_tokenize
 from nltk import sent_tokenize
 import csv
-import pickle
 
 USE_CUDA = torch.cuda.is_available()
 FloatTensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
@@ -128,7 +127,7 @@ class Data(object):
         add_new_words = False
         if self.word_embeds is None and split == "train":
             add_new_words = True
-        filename = corpus + '_tag_' + split + '.csv'
+        filename = corpus + '_' + split + '.csv'
         with open(params['data_dir'] + corpus + '/' + filename,'r', encoding='utf-8') as in_file:
             reader = csv.DictReader(in_file)
             for row in reader:
@@ -179,8 +178,6 @@ class Data(object):
                     row_dict[keyAscii] = valueAscii
                 row = row_dict
                 text = row['text']
-                # print("===text===")
-                #print(text)
                 if not self.params['case_sensitive']:
                     text = text.lower()
                 text_id = row['text_id']
@@ -218,8 +215,6 @@ class Data(object):
                         doc_indexed.append(para_indexed)
                     doc.text_indexed = doc_indexed
                 documents.append(doc)
-                # print("===documents===")
-                # print(documents)
         return documents
 
 
@@ -460,7 +455,7 @@ class Data(object):
         print("\nLoading vectors:")
         if self.params['vector_type'] == 'glove':
             data = []
-            for line in open(self.params['vector_path'], encoding='utf-8'):
+            for line in open('..\model\data\Glove\glove.840B.300d.txt', encoding='utf-8'):
                 tokens = line.split()
                 if len(tokens) != 301:
                     continue
@@ -497,7 +492,6 @@ class Data(object):
             print("============================= word embeddings ================================")
             print(self.word_embeds)
             print("loading: done")
-            pickle.dump(self.word_embeds, open('word_embeds.pkl', 'wb'))
             return self.word_embeds, vector_len
         else:
             print("unrecognized vector type")

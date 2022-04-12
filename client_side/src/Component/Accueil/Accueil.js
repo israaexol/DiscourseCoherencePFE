@@ -4,7 +4,8 @@ import Navbar from '../Navbar/Navbar'
 
 const Accueil = () => {
   return (
-    <Sidebar/>
+      <Sidebar/>
+    
   )
 }
 
