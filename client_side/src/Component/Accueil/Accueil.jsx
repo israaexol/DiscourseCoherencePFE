@@ -31,6 +31,7 @@ const Accueil = () => {
         const data = res.data.data
         const msg = `Prediction: ${data.score}`
         alert(msg)
+      
       })
       .catch((error) => alert(`Error: ${error.message}`))
   }
