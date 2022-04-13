@@ -123,7 +123,6 @@ def train(params, training_docs, test_docs, data, model):
                         best_weights = weights
                         best_weights = list(best_weights)
                 final_pred = model(batch_padded, batch_lengths, original_index, weights=best_weights)
-                pickle.dump(best_weights, open('best_weights.pkl', 'wb'))
                 loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
             elif params['model_type']== 'cnn_pos_tag': 
                 pred_coherence = model(batch_padded, batch_lengths, original_index)
@@ -157,7 +156,7 @@ def train(params, training_docs, test_docs, data, model):
         if test_accuracy > best_test_acc:
             best_test_acc = test_accuracy
             # sauvegarder le meilleur modèle
-            torch.save(model, params['model_dir'] + '/' + params['model_name'] + '_best.pt')
+            torch.save(model.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best')
             print('saved model ' + params['model_dir'] + '/' + params['model_name'] + '_best')
             if params['model_type'] == 'sent_avg':
                 pickle.dump(model, open('sent_avg.pkl', 'wb'))
@@ -198,7 +197,7 @@ def train_cv(params, data_docs, data, model):
     best_weights = None
     best_score = 0
     w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    kfold = StratifiedKFold(n_splits = 10, shuffle = False) 
+    kfold = StratifiedKFold(n_splits = 5, shuffle = False) 
     for epoch in range(params['num_epochs']):
         fold = 0
         if params['lr_decay'] == 'lambda' or params['lr_decay'] == 'step':
@@ -231,9 +230,9 @@ def train_cv(params, data_docs, data, model):
                     y_pred = []
                     coherence_pred_sent, coherence_pred_par = model(batch_padded, batch_lengths, original_index)
                     # Regrouper les prédictions du niveau phrases et les prédictions du niveau paragraphes dans un seul tableau
-                    y_pred.append(coherence_pred_sent.detach().numpy())
-                    y_pred.append(coherence_pred_par.detach().numpy())
-                    #y_pred = np.array(y_pred)
+                    y_pred.append(coherence_pred_sent)
+                    y_pred.append(coherence_pred_par)
+                    y_pred = np.array(y_pred)
                     for weights in product(w, repeat=2):
                         # Si les poids sont égaux
                         if len(set(weights)) == 1:
@@ -253,7 +252,6 @@ def train_cv(params, data_docs, data, model):
                             best_weights = weights
                             best_weights = list(best_weights)
                     final_pred = model(batch_padded, batch_lengths, original_index, weights=best_weights)
-                    pickle.dump(best_weights, open('best_weights.pkl', 'wb'))
                     loss_fn = torch.nn.CrossEntropyLoss()
                     loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
                     
@@ -285,7 +283,7 @@ def train_cv(params, data_docs, data, model):
             if test_accuracy > best_test_acc:
                 best_test_acc = test_accuracy
                 # sauvegarder le meilleur modèle
-                torch.save(model, params['model_dir'] + '/' + params['model_name'] + '_best.pt')
+                torch.save(model.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best')
                 print('saved model ' + params['model_dir'] + '/' + params['model_name'] + '_best')
                 if params['model_type'] == 'sem_rel' :
                     pickle.dump(model, open('sem_rel_cv.pkl', 'wb'))

@@ -52,10 +52,11 @@ class LSTMParSeq(nn.Module):
             return (Variable(torch.zeros(1, batch_size, self.lstm_dim)),
                     Variable(torch.zeros(1, batch_size, self.lstm_dim)))
 
-    def forward(self, inputs, input_lengths, original_index):
+    def forward(self, inputs, input_lengths, original_index, dim=0):
         doc_vecs = None
         global_deg_par = [] # Les vecteurs des similarités cosine de tous les documents d'un seul batch (chaque élément de ce tableau représente un vecteur de similarité cosine entre les paragraphes d'un seul document)
         global_avg_deg_doc = [] # les moyennes des similarités cosine des paragraphes d'un document
+        #self.embeddings = word_embeds
         for i in range(len(inputs)): # itérer sur les documents
             par_vecs = None
             for j in range(len(inputs[i])): # itérer sur les paragraphes
@@ -114,5 +115,5 @@ class LSTMParSeq(nn.Module):
         # La prédiction de cohérence pour chaque document du batch
         coherence_pred = self.predict_layer(global_vectors)
         if self.task != 'score_pred':
-            coherence_pred = F.softmax(coherence_pred, dim=0) # classification des documents
+            coherence_pred = F.softmax(coherence_pred, dim=dim) # classification des documents
         return coherence_pred, global_avg_deg_doc
