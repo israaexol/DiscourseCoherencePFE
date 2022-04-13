@@ -7,6 +7,11 @@ import "./Sidebar.css";
 import { experimentalStyled as styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import Link from '@mui/material/Link';
+import DescriptionSentAvg from '../DescriptionSentAvg/DescriptionSentAvg'
+import DescriptionParSeq from '../DescriptionParSeq/DescriptionParSeq'
+import DescriptionSemRel from '../DescriptionSemRel/DescriptionSemRel'
+import DescriptionCNNPosTag from '../DescriptionCNNPosTag/DescriptionCNNPosTag'
+
 
 //import react pro sidebar components
 import {
@@ -32,21 +37,36 @@ color: theme.palette.text.black,
 width: 100,
 }));
 
-const Sidebar = () => {
+function ModelDescription({niveau}) {
+    switch (niveau) {
+      case 0:
+        return <DescriptionSentAvg/>;
+      case 1:
+        return <DescriptionParSeq/>;
+      case 2:
+        return <DescriptionSemRel/>;
+      case 3:
+        return <DescriptionCNNPosTag/>
+      default:
+        return null;
+    }
+  }
+
+const Sidebar = ({selectedIndex}) => {
   return (
       <div id="header">
         <ProSidebar>
             <SidebarContent>
+            { {selectedIndex} ?
                 <Card sx={{ width: 350, marginTop: '5%', marginLeft: '7%' }}>
                     <CardContent>
                         <Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic' }} color="#5885FB" gutterBottom>
                         Description du modèle
                         </Typography>
-                        <Typography variant="body2" sx={{ fontFamily: 'Poppins', fontWeight: 300 }}>
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum
-                        </Typography>
+                        <ModelDescription niveau={selectedIndex}/>
                     </CardContent>
-                </Card>
+                </Card> : <></>
+            }
                 <Box
                     sx={{
                     display: 'flex',
