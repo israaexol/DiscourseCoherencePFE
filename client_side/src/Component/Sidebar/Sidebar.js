@@ -67,6 +67,9 @@ const Sidebar = ({selectedIndex}) => {
                     </CardContent>
                 </Card> : <></>
             }
+                <Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic', marginLeft: '5%', marginTop: '4%' }} color="#5885FB" gutterBottom>
+                        Technologies, librairies et outils utilisés
+                </Typography>
                 <Box
                     sx={{
                     display: 'flex',
@@ -143,7 +146,10 @@ const Sidebar = ({selectedIndex}) => {
                         Dataset utilisé
                         </Typography>
                         <Typography variant="body2" sx={{ fontFamily: 'Poppins', fontWeight: 300 }}>
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                            <b>GCDC</b> <Link href="https://github.com/aylai/GCDC-corpus" sx={{fontWeight : 500}}>(Grammarly Corpus of Discourse Coherence)</Link>
+                            est un corpus introduit par <i>(Lai et Tetreault, 2018)</i> composé d'un total de 4800 documents provenant
+                            de 4 différents corpus, chacun relatif à un domaine (Emails d'<b>Enron</b>, Emails de <b>Clinton</b>, Réponses de forum <b>Yahoo</b> et Revues de business <b>Yelp</b>)
+
                         </Typography>
                     </CardContent>
                 </Card>
@@ -162,7 +168,7 @@ const Sidebar = ({selectedIndex}) => {
                 <div class='parent'>
                     <div class='child3'></div>
                         <img src={github} height='7%' width='7%' class="logo3"></img>
-                        <Link href="https://github.com/israaexol/DiscourseCoherencePFE"><Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic', marginLeft: '20px' }}>Répertoire GitHub</Typography></Link>
+                        <Link href="https://github.com/israaexol/DiscourseCoherencePFE"><Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic', marginLeft: '12px' }}>Répertoire GitHub</Typography></Link>
                     </div>
                 <div/>
             </Box>
