@@ -8,6 +8,7 @@ from torch.autograd import Variable
 from nltk import word_tokenize
 from nltk import sent_tokenize
 import csv
+import pickle
 
 USE_CUDA = torch.cuda.is_available()
 FloatTensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
@@ -492,6 +493,8 @@ class Data(object):
             print("============================= word embeddings ================================")
             print(self.word_embeds)
             print("loading: done")
+            pickle.dump(self.word_to_idx, open('word_to_idx.pkl', 'wb'))
+            pickle.dump(self.idx_to_word, open('idx_to_word.pkl', 'wb'))
             return self.word_embeds, vector_len
         else:
             print("unrecognized vector type")

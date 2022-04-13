@@ -54,17 +54,23 @@ class NumpyArrayEncoder(JSONEncoder):
     
 class Inputs(BaseModel):
     text: str
+    selectedIndex: int
     
 # load the dictionary
-#embeddings = pickle.load(open('../model/word_embeds.pkl', 'rb'))
+embeddings = pickle.load(open('../model/word_embeds.pkl', 'rb'))
 best_weights = pickle.load(open('../model/best_weights.pkl', 'rb'))
 params = {
     'vector_type': 'glove'
 }
+
 dataObj = Data(params)
-if(dataObj.word_embeds == None):   
-    vectors, vector_dim = dataObj.load_vectors()
-#dataObj.word_embeds = embeddings
+word_to_idx = pickle.load(open('word_to_idx.pkl', 'rb'))
+idx_to_word = pickle.load(open('idx_to_word.pkl', 'rb'))
+dataObj.word_embeds = embeddings
+dataObj.word_to_idx = word_to_idx
+dataObj.idx_to_word = idx_to_word
+# if(dataObj.word_embeds == None):   
+#     vectors, vector_dim = dataObj.load_vectors()
 
 def generate_tags(text):
     stop = set(stopwords.words('english')+ list(string.punctuation))
@@ -115,10 +121,16 @@ def preprocess_data_sentavg(text):
         doc_indexed.append(para_indexed)
     doc.text_indexed = doc_indexed
     documents.append(doc)
+    print("============documents==============")
+    print(documents)
     documents_data, documents_labels, documents_ids = dataObj.create_doc_sents(documents, 'sentence', 'class')
     indices = [int('0')]
+    print("============documents_data==============")
+    print(documents_data)
     sentences, orig_batch_labels = dataObj.get_batch(documents_data, documents_labels, indices, 'sent_avg')
     batch_padded, batch_lengths, original_index = dataObj.pad_to_batch(sentences, dataObj.word_to_idx, 'sent_avg')
+    print("============batch_padded==============")
+    print(batch_padded)
     return batch_padded, batch_lengths, original_index
 
 def preprocess_data_parseq(text):
@@ -208,10 +220,10 @@ def read_root():
 
 @app.post("/evaluate")
 async def get_predict(data: Inputs):
-    niveau = 2
+    niveau = data.selectedIndex
     sample = data.text
   
-    if niveau == 1:
+    if niveau == 0:
         #model = LSTMSentAvg(params, data_obj=dataObj)
         #model = model.load_state_dict(torch.load('../model/runs/sentavg_model/sentavg_model_best'))
         #model = pickle.load(open('../model/sent_avg.pkl', 'rb'))
@@ -220,41 +232,41 @@ async def get_predict(data: Inputs):
         batch_padded, batch_lengths, original_index = preprocess_data_sentavg(sample)
         print('===================batch_padded===================')
         print(batch_padded)
-        pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dataObj.word_embeds, dim = 1)
+        pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
         print('====================pred=========================')
         print(pred)
         argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
       
-    elif niveau == 2:
+    elif niveau == 1:
         model = torch.load('../model/runs/par_seq_model/par_seq_model_best.pt')
         model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_parseq(sample)
         print('===================batch_padded===================')
         print(batch_padded)
-        pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dataObj.word_embeds, dim = 1)
+        pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
+        print('====================pred=========================')
+        print(pred)
+        argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+    elif niveau == 2:
+        model = torch.load('../model/runs/semrel_model/semrel_model_best.pt')
+        model.eval()
+        batch_padded, batch_lengths, original_index = preprocess_data_semrel(sample)
+        print('===================batch_padded===================')
+        print(batch_padded)
+        pred = model.forward(batch_padded, batch_lengths, original_index, weights=best_weights, dim = 1)
         print('====================pred=========================')
         print(pred)
         argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     elif niveau == 3:
-        model = torch.load('../model/runs/semrel_model/semrel_model_best')
-        model.eval()
-        batch_padded, batch_lengths, original_index = preprocess_data_semrel(sample)
-        print('===================batch_padded===================')
-        print(batch_padded)
-        pred = model.forward(batch_padded, batch_lengths, original_index, dataObj.word_embeds, weights=best_weights, dim = 1)
-        print('====================pred=========================')
-        print(pred)
-        argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-    elif niveau == 4:
         model = torch.load('../model/runs/cnn_postag_model/cnn_postag_model_best.pt')
         model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(sample)
         print('===================batch_padded===================')
         print(batch_padded)
-        pred = model.forward(batch_padded, batch_lengths, original_index, dataObj.word_embeds, dim = 1)
+        pred = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
         print('====================pred=========================')
         print(pred)
         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
