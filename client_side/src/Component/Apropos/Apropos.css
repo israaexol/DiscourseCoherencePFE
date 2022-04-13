@@ -6,3 +6,27 @@
     overflow: hidden;
     margin-top: 30px;
   }
+
+#apropos {
+  overflow: hidden;
+}
+
+hr {
+  width: 90%;
+  margin-left: 3%;
+  margin-right: auto;
+  height: 6px;
+  background-color:#5885FB;
+}
+
+#description {
+  width:90%
+}
+
+#realisedby {
+  overflow: hidden;
+}
+
+#encadrants {
+  overflow: hidden;
+}
