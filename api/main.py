@@ -121,16 +121,10 @@ def preprocess_data_sentavg(text):
         doc_indexed.append(para_indexed)
     doc.text_indexed = doc_indexed
     documents.append(doc)
-    print("============documents==============")
-    print(documents)
     documents_data, documents_labels, documents_ids = dataObj.create_doc_sents(documents, 'sentence', 'class')
     indices = [int('0')]
-    print("============documents_data==============")
-    print(documents_data)
     sentences, orig_batch_labels = dataObj.get_batch(documents_data, documents_labels, indices, 'sent_avg')
     batch_padded, batch_lengths, original_index = dataObj.pad_to_batch(sentences, dataObj.word_to_idx, 'sent_avg')
-    print("============batch_padded==============")
-    print(batch_padded)
     return batch_padded, batch_lengths, original_index
 
 def preprocess_data_parseq(text):
@@ -242,33 +236,21 @@ async def get_predict(data: Inputs):
         model = torch.load('../model/runs/par_seq_model/par_seq_model_best.pt')
         model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_parseq(sample)
-        print('===================batch_padded===================')
-        print(batch_padded)
         pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
-        print('====================pred=========================')
-        print(pred)
         argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     elif niveau == 2:
         model = torch.load('../model/runs/semrel_model/semrel_model_best.pt')
         model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_semrel(sample)
-        print('===================batch_padded===================')
-        print(batch_padded)
         pred = model.forward(batch_padded, batch_lengths, original_index, weights=best_weights, dim = 1)
-        print('====================pred=========================')
-        print(pred)
         argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     elif niveau == 3:
         model = torch.load('../model/runs/cnn_postag_model/cnn_postag_model_best.pt')
         model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(sample)
-        print('===================batch_padded===================')
-        print(batch_padded)
         pred = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
-        print('====================pred=========================')
-        print(pred)
         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     else:
