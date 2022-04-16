@@ -9,7 +9,7 @@
     height: 150px;
     margin-top: 5%;
     background: #FFFFFF;
-    border: 3px solid #000000;
+    border: 2px solid #000000;
     box-sizing: border-box;
     box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
     border-radius: 15px;
@@ -20,6 +20,7 @@
 
 ._textarea {
     margin-top: 3px;
+    padding: 2%;
     width: 95%;
     resize: none;
     border: none;
@@ -31,7 +32,7 @@
     box-shadow: none;
     font-family: 'Didact Gothic';
     font-size: 19px;
-    color: rgba(0, 0, 0, 0.35);
+    color: rgba(0, 0, 0, 0.543);
     text-align: center;
 }
 
@@ -75,4 +76,37 @@
 .eval_anal {
     display: flex;
     margin-top: 4%;
+}
+
+.result {
+    display: flex;
+    justify-content: space-evenly;
+    width: 35%;
+    /* margin-left: 10%; */
+    
+}
+
+#evalSection {
+    display: flex;
+    justify-content: center;
+    margin-top: 3.5%;
+}
+
+.card1 {
+    display: flex;
+    width: 65%;
+}
+
+.cards-key {
+    width: 20%;
+    padding: 1%;
+    margin-left: 10%;
+    background-color: #E4ECFF;
+    border-radius: 3%;
+    box-shadow: 0.5px 0.5px 2px 0;
+}
+
+#scoreCard {
+    margin-left: 10px;
+    width: 100%;
 }
