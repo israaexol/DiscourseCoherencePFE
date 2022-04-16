@@ -1,8 +1,6 @@
 import React from 'react';
 import './Navbar.css'
 import logo from '../../assets/logo.png'
-import coherencia from '../../assets/coherencia.png'
-
 
 const Menu = () => (
     <>
@@ -16,7 +14,7 @@ const Navbar = () => {
         <div id='navbar' >
             <div className='navbar_links' >
                 < div className='navbar_logo' >
-                    <img src={coherencia}
+                    <img src={logo}
                         alt="logo" />
                     La coherencia
                 </div>
