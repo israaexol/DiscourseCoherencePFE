@@ -13,11 +13,16 @@ import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import './Accueil.css'
 import Sidebar from '../Sidebar/Sidebar'
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardActions from '@mui/material/CardActions';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Brightness1RoundedIcon from '@mui/icons-material/Brightness1Rounded';
 
 const Accueil = () => {
   const [text, setText] = useState("");
   const options = ['Parenté sémantique entre les phrases', 'Parenté sémantique entre les paragraphes', 'Parenté sémantique entre les phrases et les paragraphes', 'Richesse lexicale', 'Richesse lexicale et parenté sémantique'];
-
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -25,15 +30,21 @@ const Accueil = () => {
     event.preventDefault();
     alert(` you entered : ${text}, ${selectedIndex}`);
     const params = { text, selectedIndex };
+    var divelement = document.getElementById('evalSection')
     axios
       .post('http://localhost:8080/evaluate/', params)
       .then((res) => {
         const data = res.data.data
         const msg = `Prediction: ${data.score}`
-        alert(msg)
-      
+        divelement.hidden = false
+        setScore(msg)
       })
-      .catch((error) => alert(`Error: ${error.message}`))
+      .catch((error) => {
+        // alert(`Error: ${error.message}`)
+        divelement.hidden = false
+        setScore(error.message)
+      })
+
   }
 
   const handleClick = () => {
@@ -55,7 +66,52 @@ const Accueil = () => {
 
     setOpen(false);
   };
-
+  const [scoreResult, setScore] = useState();
+  function BasicCard({ score }) {
+    let val
+    if (score >= 2) {
+      val = <Typography variant="h6" component="div" color="#079615">
+        Score de coherence : {score}
+      </Typography>
+    }
+    else if (score >= 1) {
+      val = <Typography variant="h6" component="div" color="#FF9A02">
+        Score de coherence : {score}
+      </Typography>
+    }
+    else if (score >= 0) {
+      val = <Typography variant="h6" component="div" color="#E33A3A">
+        Score de coherence : {score}
+      </Typography>
+    }
+    else {
+      val = <Typography variant="h6" component="div">
+        Score de coherence : {score}
+      </Typography>
+    }
+    return (
+      <div className='result'>
+        <Card sx={{ minWidth: 275 }}>
+          <CardContent>
+            <Typography variant="h6" component="div">
+              {val}
+            </Typography>
+          </CardContent>
+          <CardActions>
+            <Button size="small">Voir plus</Button>
+          </CardActions>
+        </Card>
+      </div>
+    );
+  }
+  function Score({ scoreResult }) {
+    switch (scoreResult) {
+      case null:
+        return <BasicCard score="" />
+      default:
+        return <BasicCard score={scoreResult} />
+    }
+  }
 
   return (
     <>
@@ -64,6 +120,7 @@ const Accueil = () => {
         <Form onSubmit={handleSubmit}>
           <div className='input_text'>
             <textarea
+              id='CheckIt'
               className='_textarea'
               required
               type='text'
@@ -75,6 +132,7 @@ const Accueil = () => {
           </div>
           <br />
           <Button type="button" id='import_btn'>Importer un fichier</Button>
+
           <div className='eval_anal'>
             <div id='analyser_btn'>
               <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button">
@@ -125,6 +183,23 @@ const Accueil = () => {
               </Popper>
             </div>
             <Button type="submit" id='eval_btn'>Évaluer</Button>
+          </div>
+          <div id='evalSection' hidden >
+            <Score scoreResult={scoreResult} />
+            <div className='cards-key'>
+              <div className='card1'>
+                <div><Brightness1RoundedIcon sx={{ color: "#079615" }} /></div>
+                <p>2 - 3 (élevé)</p>
+              </div>
+              <div className='card1'>
+                <div><Brightness1RoundedIcon sx={{ color: "#FF9A02" }} /></div>
+                <p>1 - 2 (moyen)</p>
+              </div>
+              <div className='card1'>
+                <div><Brightness1RoundedIcon sx={{ color: "#E33A3A" }} /></div>
+                <p>0 - 1 (bas)</p>
+              </div>
+            </div>
           </div>
         </Form>
       </div>

@@ -76,3 +76,27 @@
     display: flex;
     margin-top: 4%;
 }
+
+.result {
+    display: flex;
+    justify-content: center;
+    width: 20%;
+    margin-left: 10%;
+    
+}
+
+#evalSection {
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
+}
+
+.card1 {
+    display: flex;
+    width: 30%;
+}
+
+.cards-key {
+    width: 50%;
+    margin-left: 10%;
+}
