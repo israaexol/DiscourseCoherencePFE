@@ -4,7 +4,12 @@ import "./Apropos.css";
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import AlternateEmailIcon from '@mui/icons-material/AlternateEmail';
-
+import python from '../../assets/python.png'
+import pytorch from '../../assets/pytorch.png'
+import numpy from '../../assets/numpy.png'
+import anaconda from '../../assets/anaconda.png'
+import vscode from '../../assets/vscode.png'
+import scikitlearn from '../../assets/scikitlearn.png'
 const Apropos = () => {
 
   function Item(props) {
@@ -45,6 +50,74 @@ const Apropos = () => {
             </Typography>
           </div>
         </div>
+
+        <div id="technologies">
+          <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 700, color: '#5885FB', marginTop: '3%', marginLeft: '3%' }}>
+            Technologies, librairies et outils utilisés
+          </Typography>
+          <hr/>
+          <Box
+                    sx={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    p: 1,
+                    m: 1,
+                    justifyContent: 'space-between',
+                    width: '80%'
+                    }}
+                >
+                    <Item sx={{ backgroundColor: '#CADCF1', borderRadius: 2, width: '95px', height: '32px' }}>
+                        <div class='parent'>
+                            <div class='child'>
+                                <img src={python} class='logo'></img>
+                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Python</Typography>
+                            </div>
+                        </div>
+                    </Item>
+                    <Item sx={{ backgroundColor: '#FFFAC9', borderRadius: 2, width: '125px', height: '32px' }}>
+                        <div class='parent'>
+                            <div class='child3'>
+                                <img src={scikitlearn} class='logo'></img>
+                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Scikit-learn</Typography>
+                            </div>
+                        </div>
+                    </Item>
+                    <Item sx={{ backgroundColor: '#E1EFFF', borderRadius: 2, width: '95px', height: '32px' }}>
+                        <div class='parent'>
+                            <div class='child'>
+                                <img src={numpy} class='logo'></img>
+                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Numpy</Typography>
+                            </div>
+                        </div>
+                    </Item>
+                    <Item sx={{ backgroundColor: '#E1EFFF', borderRadius: 2, width: '95px', height: '32px' }}>
+                        <div class='parent'>
+                            <div class='child'>
+                                <img src={vscode} class='logo'></img>
+                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>VS Code</Typography>
+                            </div>
+                        </div>
+                    </Item>
+                    <Item sx={{ backgroundColor: '#FFF27B', borderRadius: 2, width: '125px', height: '32px' }}>
+                        <div class='parent'>
+                            <div class='child2'>
+                                <img src={anaconda} class='logo2'></img>
+                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Anaconda</Typography>
+                            </div>
+                        </div>
+                    </Item>
+                    <Item sx={{ backgroundColor: '#FFE1E1', borderRadius: 2, width: '95px', height: '32px' }}>
+                        <div class='parent'>
+                            <div class='child'>                            
+                                <img class='logo' src={pytorch}></img>
+                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Pytorch</Typography>
+                            </div>
+                        </div>
+                    </Item>
+                </Box>
+                    
+        </div>
+        
         <div id="realisedby">
           <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 700, color: '#5885FB', marginTop: '3%', marginLeft: '3%' }}>
             Réalisé par
@@ -105,6 +178,8 @@ const Apropos = () => {
               </Box>
           </div>
         </div>
+
+        
         {/* <div id="encadrants">
           <Typography variant="h4" sx={{ fontFamily: 'Poppins', fontWeight: 700, color: '#5885FB', marginTop: '3%', marginLeft: '3%' }}>
             encadré par

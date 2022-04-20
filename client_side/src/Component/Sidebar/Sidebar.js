@@ -21,12 +21,7 @@ import {
     SidebarFooter,
     SidebarContent,
   } from "react-pro-sidebar";
-import python from '../../assets/python.png'
-import pytorch from '../../assets/pytorch.png'
-import numpy from '../../assets/numpy.png'
-import anaconda from '../../assets/anaconda.png'
-import vscode from '../../assets/vscode.png'
-import scikitlearn from '../../assets/scikitlearn.png'
+
 import github from '../../assets/github.png'
 
 const Item = styled(Paper)(({ theme }) => ({
@@ -67,79 +62,6 @@ const Sidebar = ({selectedIndex}) => {
                     </CardContent>
                 </Card> : <></>
             }
-                <Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic', marginLeft: '5%', marginTop: '4%' }} color="#5885FB" gutterBottom>
-                        Technologies, librairies et outils utilisés
-                </Typography>
-                <Box
-                    sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    p: 1,
-                    m: 1,
-                    justifyContent: 'space-between'
-                    }}
-                >
-                    <Item sx={{ backgroundColor: '#CADCF1', borderRadius: 2, width: '95px', height: '12px' }}>
-                        <div class='parent'>
-                            <div class='child'>
-                                <img src={python} class='logo'></img>
-                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Python</Typography>
-                            </div>
-                        </div>
-                    </Item>
-                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '125px', height: '12px' }}>
-                        <div class='parent'>
-                            <div class='child3'>
-                                <img src={scikitlearn} class='logo'></img>
-                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Scikit-learn</Typography>
-                            </div>
-                        </div>
-                    </Item>
-                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '95px', height: '12px' }}>
-                        <div class='parent'>
-                            <div class='child'>
-                                <img src={numpy} class='logo'></img>
-                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Numpy</Typography>
-                            </div>
-                        </div>
-                    </Item>
-                </Box>
-                <Box
-                    sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    p: 1,
-                    m: 1,
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start'
-                    }}
-                >
-                    <Item sx={{ backgroundColor: '#FFFFFF', borderRadius: 2, width: '95px', height: '12px' }}>
-                        <div class='parent'>
-                            <div class='child'>
-                                <img src={vscode} class='logo'></img>
-                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>VS Code</Typography>
-                            </div>
-                        </div>
-                    </Item>
-                    <Item sx={{ backgroundColor: '#FFF27B', borderRadius: 2, width: '125px', height: '12px' }}>
-                        <div class='parent'>
-                            <div class='child2'>
-                                <img src={anaconda} class='logo2'></img>
-                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Anaconda</Typography>
-                            </div>
-                        </div>
-                    </Item>
-                    <Item sx={{ backgroundColor: '#FFE1E1', borderRadius: 2, width: '95px', height: '12px' }}>
-                        <div class='parent'>
-                            <div class='child'>                            
-                                <img class='logo' src={pytorch}></img>
-                                <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Pytorch</Typography>
-                            </div>
-                        </div>
-                    </Item>
-                    
-                </Box>
                 <Card sx={{ width: 350, marginTop: '5%', marginLeft: '7%' }}>
                     <CardContent>
                         <Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic' }} color="#5885FB" gutterBottom>

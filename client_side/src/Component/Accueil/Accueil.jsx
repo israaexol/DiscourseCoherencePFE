@@ -18,7 +18,7 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 
 const Accueil = () => {
-  
+
   const [text, setText] = useState("");
   const options = ['Parenté sémantique entre les phrases', 'Parenté sémantique entre les paragraphes', 'Parenté sémantique entre les phrases et les paragraphes', 'Richesse lexicale', 'Richesse lexicale et parenté sémantique'];
   const [open, setOpen] = React.useState(false);
@@ -45,6 +45,7 @@ const Accueil = () => {
         // alert(`Error: ${error.message}`)
         divelement.hidden = false
         setScore(error.message)
+        setLoading(false)
       })
 
   }

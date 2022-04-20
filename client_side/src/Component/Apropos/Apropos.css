@@ -27,6 +27,13 @@ hr {
   overflow: hidden;
 }
 
+#contact {
+  margin-top: 0;
+}
+#technologies {
+  overflow: hidden;
+}
+
 #encadrants {
   overflow: hidden;
 }
