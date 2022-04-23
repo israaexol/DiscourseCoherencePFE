@@ -58,17 +58,23 @@ const Accueil = () => {
         })
     } else {
       axios
-        .post('http://localhost:8080/uploadfile/', selectedIndex, data)
+        .post('http://localhost:8080/uploadfile?niveau='+selectedIndex, data)
         .then((res) => {
           const data = res.data.data
-          const score = `${data}`
-          var myArray = JSON.Parse(score);
+          const score = data
+          let index = 0
+          while(index < score.length) {
+            score[index]++;
+            index++;
+          }
+          // alert(score)
+          // var myArray = JSON.Parse(score);
           let chart_result = []
-          for (var i = 0; i < myArray.length; i++) {
+          for (var i = 0; i < score.length; i++) {
             let label = "doc" + i
             let obj = {
               label: label,
-              score: myArray[i]
+              score: score[i]
             }
             chart_result.push(obj)
           }
