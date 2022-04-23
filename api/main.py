@@ -289,13 +289,14 @@ async def get_predict(data: Inputs):
 async def get_predict_file(niveau : int , file: UploadFile = File(...)):
     content_assignment = await file.read()
     data = convert_csv(content_assignment)
+    print("============data==============")
+    print(data)
     scores = []
     for i in range(len(data)): 
         sample = data[i]['text']
+        print("============sample==============")
+        print(sample)
         if niveau == 0:
-            #model = LSTMSentAvg(params, data_obj=dataObj)
-            #model = model.load_state_dict(torch.load('../model/runs/sentavg_model/sentavg_model_best'))
-            #model = pickle.load(open('../model/sent_avg.pkl', 'rb'))
             model = torch.load('../model/runs/sent_avg_model/sent_avg_model_best.pt')
             model.eval()
             batch_padded, batch_lengths, original_index = preprocess_data_sentavg(sample)
@@ -337,7 +338,7 @@ async def get_predict_file(niveau : int , file: UploadFile = File(...)):
    
     
     
-    
+    print(scores)
     return {"data":  scores}
 
 
