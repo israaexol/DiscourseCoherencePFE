@@ -1,15 +1,21 @@
 #navbar {
+    position: fixed;
+    overflow: hidden;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    /* padding: 1rem; */
     background-color: #5885FB;
+    top: 0%;
+    width: 100%;
+    
 }
 
 .navbar_logo img {
-    width: 8%;
-    height: 10%;
-    margin-right: 15px; 
+    width: 6%;
+    height: 8%;
+    margin-right: 4%; 
+    margin-bottom: 1%;;
 }
 
 .navbar_logo {

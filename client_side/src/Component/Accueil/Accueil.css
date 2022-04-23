@@ -37,8 +37,9 @@
 }
 
 #import_btn {
-    margin: auto;
-    display: block;
+    /* margin: auto;
+    display: block; */
+    margin-right: 2%;
     width: 200px;
     height: 60px;
     background: #F4C20D;
@@ -109,4 +110,9 @@
 #scoreCard {
     margin-left: 10px;
     width: 100%;
+}
+.file-inputs{
+    display: flex;
+    justify-content: center;
+
 }

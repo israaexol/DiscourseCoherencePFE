@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import * as  React from 'react';
 import axios from 'axios'
-import { Form, Row, Col } from "react-bootstrap";
+import { Form, Row, Col, Stack } from "react-bootstrap";
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -16,6 +16,10 @@ import Sidebar from '../Sidebar/Sidebar'
 import Result from '../Result/Result'
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import ThreeSixtyIcon from '@mui/icons-material/ThreeSixty';
+
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+
 
 const Accueil = () => {
 
@@ -23,32 +27,85 @@ const Accueil = () => {
   const options = ['Parenté sémantique entre les phrases', 'Parenté sémantique entre les paragraphes', 'Parenté sémantique entre les phrases et les paragraphes', 'Richesse lexicale', 'Richesse lexicale et parenté sémantique'];
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef(null);
+  const hiddenFileInput = React.useRef(null);
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [isLoading, setLoading] = useState(null)
+  const [isEmpty, setEmpty] = useState(true)
+  const [state, setState] = useState(null)
+  const [data, setData] = useState(null)
+  const [scoreResult, setScore] = useState(null);
+
 
   const handleSubmit = (event) => {
     setLoading(true)
     event.preventDefault();
-    // alert(` you entered : ${text}, ${selectedIndex}`);
     const params = { text, selectedIndex };
     var divelement = document.getElementById('evalSection')
-    axios
-      .post('http://localhost:8080/evaluate/', params)
-      .then((res) => {
-        const data = res.data.data
-        const msg = `${data.score}`
-        divelement.hidden = false
-        setScore(msg)
-        setLoading(false)
-      })
-      .catch((error) => {
-        // alert(`Error: ${error.message}`)
-        divelement.hidden = false
-        setScore(error.message)
-        setLoading(false)
-      })
+    if (data == null) {
+      axios
+        .post('http://localhost:8080/evaluate/', params)
+        .then((res) => {
+          const data = res.data.data
+          const msg = `${data.score}`
+          divelement.hidden = false
+          setScore(msg)
+          setLoading(false)
+        })
+        .catch((error) => {
+          divelement.hidden = false
+          setScore(error.message)
+          setLoading(false)
+        })
+    } else {
+      axios
+        .post('http://localhost:8080/uploadfile/', selectedIndex, data)
+        .then((res) => {
+          const data = res.data.data
+          const score = `${data}`
+          var myArray = JSON.Parse(score);
+          let chart_result = []
+          for (var i = 0; i < myArray.length; i++) {
+            let label = "doc" + i
+            let obj = {
+              label: label,
+              score: myArray[i]
+            }
+            chart_result.push(obj)
+          }
+
+          setState(chart_result)
+          setEmpty(false)
+          setLoading(false)
+        })
+        .catch((error) => {
+          alert(`Error: ${error.message}`)
+          divelement.hidden = false
+          setScore(error.message)
+          setLoading(false)
+        })
+    }
 
   }
+  const handleImport = event => {
+    var textarea = document.getElementById('CheckIt');
+    textarea.required = false;
+    textarea.disabled = true;
+    hiddenFileInput.current.click();
+
+  };
+  const handleChange = event => {
+    const fileUploaded = event.target.files[0];
+    if (fileUploaded) {
+      let dataFile = new FormData();
+      dataFile.append('file', fileUploaded);
+      setData(dataFile)
+    }
+  };
+
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
 
   const handleClick = () => {
   };
@@ -69,29 +126,56 @@ const Accueil = () => {
 
     setOpen(false);
   };
-  const [scoreResult, setScore] = useState();
-  
-  function RenderResult({isLoading}) {
-    if(isLoading === null) {
-      return <Result hidden={true}/>
+
+  function RenderResult({ isLoading }) {
+    if (isLoading === null) {
+      return <Result hidden={true} />
     }
-    else if(isLoading === true) {
+    else if (isLoading === true) {
       return (
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4%' }}>
-        <CircularProgress/>
-        <Result hidden={true}/>
+          <CircularProgress />
+          <Result hidden={true} />
         </Box>
-          )
+      )
     }
     else {
       return <Result hidden={false} scoreResult={scoreResult} />
     }
-      
+
+  }
+
+  function RenderChart({ isEmpty }) {
+    if (isEmpty === true) {
+      return <></>
+    }
+    else {
+      return (
+        <BarChart
+          width={500}
+          height={300}
+          data={state}
+          margin={{
+            top: 5,
+            right: 30,
+            left: 20,
+            bottom: 5,
+          }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="label" />
+          <YAxis tickCount={4} />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="score" fill="#8884d8" />
+        </BarChart>
+      )
+    }
   }
 
   return (
     <>
-      <Sidebar selectedIndex={selectedIndex}/>
+      <Sidebar selectedIndex={selectedIndex} />
       <div className='form'>
         <Form onSubmit={handleSubmit}>
           <div className='input_text'>
@@ -100,14 +184,22 @@ const Accueil = () => {
               className='_textarea'
               required
               type='text'
-              placeholder="Insérez votre texte" 
+              placeholder="Insérez votre texte"
               value={text}
               onChange={(e) => setText(e.target.value)
               }
             />
           </div>
           <br />
-          <Button type="button" id='import_btn'>Importer un fichier</Button>
+          <div className="file-inputs">
+            <Button type="button" id='import_btn' onClick={handleImport}>Importer un fichier</Button>
+            <input type="file" ref={hiddenFileInput} onChange={handleChange} style={{ display: 'none' }} />
+            <Button variant="outlined" startIcon={<ThreeSixtyIcon />} onClick={handleRefresh}>
+              Rafraîchir
+            </Button>
+          </div>
+
+          {/* <Button type="button" id='import_btn' onClick={handleImport}>Importer un fichier</Button> */}
 
           <div className='eval_anal'>
             <div id='analyser_btn'>
@@ -160,7 +252,8 @@ const Accueil = () => {
             </div>
             <Button type="submit" id='eval_btn'>Évaluer</Button>
           </div>
-          <RenderResult isLoading={isLoading}/>
+          <RenderResult isLoading={isLoading} />
+          <RenderChart isEmpty={isEmpty} />
         </Form>
       </div>
     </>

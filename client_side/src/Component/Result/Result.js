@@ -11,7 +11,7 @@ const Result = ({hidden, scoreResult}) => {
     function Score({ scoreResult }) {
         switch (scoreResult) {
             case null:
-            return <BasicCard score="" />
+            return <></>
             default:
             return <BasicCard score={scoreResult} />
         }

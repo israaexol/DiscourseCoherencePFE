@@ -1,9 +1,10 @@
+from asyncio.log import logger
 import uvicorn
 import pickle
 import random
 import numpy
 from pydantic import BaseModel
-from fastapi import FastAPI
+from fastapi import FastAPI,UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from LSTMSentAvg import LSTMSentAvg
 from LSTMParSeq import LSTMParSeq
@@ -22,7 +23,8 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import string
 import pandas as pd
-
+from tempfile import NamedTemporaryFile
+import csv
 
 app = FastAPI()
 origins = [
@@ -71,6 +73,25 @@ dataObj.word_to_idx = word_to_idx
 dataObj.idx_to_word = idx_to_word
 # if(dataObj.word_embeds == None):   
 #     vectors, vector_dim = dataObj.load_vectors()
+
+def convert_csv(bytes):
+    data = {}
+    file_copy = NamedTemporaryFile(delete=False)
+    try:
+        with file_copy as f:  
+            f.write(bytes)
+ 
+        with open(file_copy.name,'r', encoding='utf-8') as csvf:
+            csvReader = csv.DictReader(csvf)
+            i = 0
+            for rows in csvReader:            
+                key = i
+                data[key] = rows  
+                i= i+1 
+    finally:
+        file_copy.close()  
+        os.unlink(file_copy.name) 
+    return data
 
 def generate_tags(text):
     stop = set(stopwords.words('english')+ list(string.punctuation))
@@ -262,7 +283,63 @@ async def get_predict(data: Inputs):
              # 'interpretation': 'Candidate can be hired.' if label == 1 else 'Candidate can not be hired.'
          }
     }
+
+
+@app.post("/uploadfile")
+async def get_predict_file(niveau : int , file: UploadFile = File(...)):
+    content_assignment = await file.read()
+    data = convert_csv(content_assignment)
+    scores = []
+    for i in range(len(data)): 
+        sample = data[i]['text']
+        if niveau == 0:
+            #model = LSTMSentAvg(params, data_obj=dataObj)
+            #model = model.load_state_dict(torch.load('../model/runs/sentavg_model/sentavg_model_best'))
+            #model = pickle.load(open('../model/sent_avg.pkl', 'rb'))
+            model = torch.load('../model/runs/sent_avg_model/sent_avg_model_best.pt')
+            model.eval()
+            batch_padded, batch_lengths, original_index = preprocess_data_sentavg(sample)
+            print('===================batch_padded===================')
+            print(batch_padded)
+            pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
+            print('====================pred=========================')
+            print(pred)
+            argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+      
+        elif niveau == 1:
+            model = torch.load('../model/runs/par_seq_model/par_seq_model_best.pt')
+            model.eval()
+            batch_padded, batch_lengths, original_index = preprocess_data_parseq(sample)
+            pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
+            argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+        elif niveau == 2:
+            model = torch.load('../model/runs/semrel_model/semrel_model_best.pt')
+            model.eval()
+            batch_padded, batch_lengths, original_index = preprocess_data_semrel(sample)
+            pred = model.forward(batch_padded, batch_lengths, original_index, weights=best_weights, dim = 1)
+            argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+        elif niveau == 3:
+            model = torch.load('../model/runs/cnn_postag_model/cnn_postag_model_best.pt')
+            model.eval()
+            batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(sample)
+            pred = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
+            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+        else:
+            model = pickle.load(open('../model/sem_syn_cv.pkl', 'rb'))
+   
     
+    
+    
+    return {"data":  scores}
+
 
 # Configuring the server host and port
 if __name__ == '__main__':
