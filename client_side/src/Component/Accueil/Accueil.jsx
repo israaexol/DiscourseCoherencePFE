@@ -86,10 +86,10 @@ const Accueil = () => {
           let count_low = 0
           let count_med = 0
           let count_high = 0
-          for (var i = 0; i < myArray.length; i++) {
-            if (myArray[i] == 0) {
+          for (var i = 0; i < score.length; i++) {
+            if (score[i] == 0) {
               count_low++
-            } else if (myArray[i] == 1) {
+            } else if (score[i] == 1) {
               count_med++
             } else {
               count_high++
