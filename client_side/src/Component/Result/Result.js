@@ -5,8 +5,9 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Brightness1RoundedIcon from '@mui/icons-material/Brightness1Rounded';
 import Button from '@mui/material/Button';
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const Result = ({hidden, scoreResult}) => {
+const Result = ({hidden, scoreResult, isEmpty, chartData, chart }) => {
 
     function Score({ scoreResult }) {
         switch (scoreResult) {
@@ -55,23 +56,78 @@ const Result = ({hidden, scoreResult}) => {
         );
     }
 
+    function RenderChart({ isEmpty, chartData }) {
+      if (isEmpty === true) {
+        return <></>
+      }
+      else {
+        return (
+          <>
+            <div style={{display: 'block'}}>
+              <BarChart
+                width={500}
+                height={300}
+                data={chartData}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="label" />
+                <YAxis tickCount={4} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="score" fill="#8884d8" />
+              </BarChart>
+
+              <div>
+                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '50px' }} >
+                  <Typography variant='body2' sx={{ fontSize: 18, fontFamily: 'Didact Gothic' }} color="#000" gutterBottom>
+                    Nombre de documents par classe de cohérence
+                  </Typography>
+                </div>
+              </div>
+            </div>
+            
+          </>
+          
+        )
+      }
+    }
+
+    function Render({ chart }) {
+      if (chart === true) {
+        return <RenderChart isEmpty={isEmpty} chartData={chartData} />
+      }
+      else {
+        return (
+          <>
+             <Score scoreResult={scoreResult}/>
+               <div className='cards-key'>
+                 <div className='card1'>
+                     <div><Brightness1RoundedIcon sx={{ color: "#079615" }} /></div>
+                     <p id='scoreCard'>2 - 3 (élevé)</p>
+                 </div>
+                 <div className='card1'>
+                     <div><Brightness1RoundedIcon sx={{ color: "#FF9A02" }} /></div>
+                     <p id='scoreCard'>1 - 2 (moyen)</p>
+                 </div>
+                 <div className='card1'>
+                     <div><Brightness1RoundedIcon sx={{ color: "#E33A3A" }} /></div>
+                     <p id='scoreCard'>0 - 1 (bas)</p>
+                 </div>
+               </div>
+           </>
+        )
+      }
+    }
+
   return (
     <div id='evalSection' hidden={hidden}>
-        <Score scoreResult={scoreResult} />
-        <div className='cards-key'>
-        <div className='card1'>
-            <div><Brightness1RoundedIcon sx={{ color: "#079615" }} /></div>
-            <p id='scoreCard'>2 - 3 (élevé)</p>
-        </div>
-        <div className='card1'>
-            <div><Brightness1RoundedIcon sx={{ color: "#FF9A02" }} /></div>
-            <p id='scoreCard'>1 - 2 (moyen)</p>
-        </div>
-        <div className='card1'>
-            <div><Brightness1RoundedIcon sx={{ color: "#E33A3A" }} /></div>
-            <p id='scoreCard'>0 - 1 (bas)</p>
-        </div>
-        </div>
+      <Render chart={chart}/>
     </div>
   )
 }

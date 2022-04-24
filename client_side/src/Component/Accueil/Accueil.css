@@ -41,7 +41,7 @@
     display: block; */
     margin-right: 2%;
     width: 200px;
-    height: 60px;
+    height: 50px;
     background: #F4C20D;
     box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.25);
     border-radius: 14px;
@@ -62,7 +62,7 @@
 #eval_btn {
     margin: auto;
     width: 200px;
-    height: 60px;
+    height: 50px;
     background: #1565c0;
     box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.25);
     border-radius: 14px;
@@ -100,6 +100,7 @@
 
 .cards-key {
     width: 20%;
+    height: 130px;
     padding: 1%;
     margin-left: 10%;
     background-color: #E4ECFF;

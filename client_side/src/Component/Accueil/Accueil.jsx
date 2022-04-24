@@ -18,8 +18,6 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import ThreeSixtyIcon from '@mui/icons-material/ThreeSixty';
 
-import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-
 
 const Accueil = () => {
 
@@ -63,10 +61,10 @@ const Accueil = () => {
           const data = res.data.data
           const score = data
           let index = 0
-          while (index < score.length) {
-            score[index]++;
-            index++;
-          }
+          // while (index < score.length) {
+          //   score[index]++;
+          //   index++;
+          // }
           // alert(score)
           // var myArray = JSON.Parse(score);
           let chart_result = [
@@ -167,38 +165,18 @@ const Accueil = () => {
       )
     }
     else {
-      return <Result hidden={false} scoreResult={scoreResult} />
+      if (state === null) {
+        return <Result hidden={false} scoreResult={scoreResult} isEmpty={true} chartData={null} chart={false} />
+      }
+      else {
+        return <Result hidden={false} scoreResult={null} isEmpty={false} chartData={state} chart={true} />
+      }
+      
     }
 
   }
 
-  function RenderChart({ isEmpty }) {
-    if (isEmpty === true) {
-      return <></>
-    }
-    else {
-      return (
-        <BarChart
-          width={500}
-          height={300}
-          data={state}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="label" />
-          <YAxis tickCount={4} />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="score" fill="#8884d8" />
-        </BarChart>
-      )
-    }
-  }
+  
 
   return (
     <>
@@ -231,7 +209,7 @@ const Accueil = () => {
           <div className='eval_anal'>
             <div id='analyser_btn'>
               <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button">
-                <Button onClick={handleClick} resize="none" >{options[selectedIndex]}</Button>
+                <Button onClick={handleClick} sx={{width: '400px'}} >{options[selectedIndex]}</Button>
                 <Button
                   size="small"
                   aria-controls={open ? 'split-button-menu' : undefined}
@@ -277,10 +255,9 @@ const Accueil = () => {
                 )}
               </Popper>
             </div>
-            <Button type="submit" id='eval_btn'>Évaluer</Button>
+            <Button type="submit" id='eval_btn' >Évaluer</Button>
           </div>
-          <RenderResult isLoading={isLoading} />
-          <RenderChart isEmpty={isEmpty} />
+          <RenderResult isLoading={isLoading}/>
         </Form>
       </div>
     </>
