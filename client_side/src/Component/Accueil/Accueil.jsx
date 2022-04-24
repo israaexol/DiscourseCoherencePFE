@@ -58,26 +58,47 @@ const Accueil = () => {
         })
     } else {
       axios
-        .post('http://localhost:8080/uploadfile?niveau='+selectedIndex, data)
+        .post('http://localhost:8080/uploadfile?niveau=' + selectedIndex, data)
         .then((res) => {
           const data = res.data.data
           const score = data
           let index = 0
-          while(index < score.length) {
+          while (index < score.length) {
             score[index]++;
             index++;
           }
           // alert(score)
           // var myArray = JSON.Parse(score);
-          let chart_result = []
-          for (var i = 0; i < score.length; i++) {
-            let label = "doc" + i
-            let obj = {
-              label: label,
-              score: score[i]
+          let chart_result = [
+            {
+              label: 'Low',
+              score: 0
+            },
+            {
+              label: 'Medium',
+              score: 0
+            },
+            {
+              label: 'High',
+              score: 0
+            },
+          ]
+          let count_low = 0
+          let count_med = 0
+          let count_high = 0
+          for (var i = 0; i < myArray.length; i++) {
+            if (myArray[i] == 0) {
+              count_low++
+            } else if (myArray[i] == 1) {
+              count_med++
+            } else {
+              count_high++
             }
-            chart_result.push(obj)
+
           }
+          chart_result[0].score = count_low
+          chart_result[1].score = count_med
+          chart_result[2].score = count_high
 
           setState(chart_result)
           setEmpty(false)
