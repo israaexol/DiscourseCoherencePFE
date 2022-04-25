@@ -8,6 +8,7 @@
     background-color: #5885FB;
     top: 0%;
     width: 100%;
+    z-index: 1;
     
 }
 
@@ -20,7 +21,7 @@
 
 .navbar_logo {
     font-family: 'Pacifico';
-    font-size: 40px;
+    font-size: 35px;
     color: #fff;
 }
 
@@ -39,6 +40,7 @@
 
 .menu_div {
     width: 220px;
+    height: 30px;
 }
 
 .navbar_menu p a {

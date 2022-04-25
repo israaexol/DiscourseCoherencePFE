@@ -1,0 +1,6 @@
+.result {
+    display: flex;
+    justify-content: space-evenly;
+    width: 35%;
+    margin: 1% 3%;
+}
