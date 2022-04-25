@@ -7,7 +7,7 @@
     margin: auto;
     width: 50%;
     height: 150px;
-    margin-top: 5%;
+    margin-top: 6%;
     background: #FFFFFF;
     border: 2px solid #000000;
     box-sizing: border-box;
@@ -56,13 +56,13 @@
 #analyser_btn {
     margin: auto;
     width: 250px;
-    height: 60px;
+    height: 40px;
 }
 
 #eval_btn {
     margin: auto;
     width: 200px;
-    height: 50px;
+    height: 40px;
     background: #1565c0;
     box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.25);
     border-radius: 14px;
@@ -76,15 +76,9 @@
 
 .eval_anal {
     display: flex;
-    margin-top: 4%;
-}
-
-.result {
-    display: flex;
-    justify-content: space-evenly;
-    width: 35%;
-    /* margin-left: 10%; */
-    
+    margin-top: 8%;
+    margin-right: -4%;
+    margin-left: -4%
 }
 
 #evalSection {
@@ -112,8 +106,48 @@
     margin-left: 10px;
     width: 100%;
 }
+
 .file-inputs{
     display: flex;
     justify-content: center;
 
 }
+
+#firstSection {
+    position: absolute;
+    display: block;
+    justify-content: center;
+    align-items: center;
+    width: 80%;
+    height: 100px;
+    margin-bottom: 10px;
+    overflow:hidden;
+}
+
+#secondSection {
+    position: absolute;
+    justify-content: center;
+    align-items: center;
+    width: 80%;
+    height: 85px;
+    margin-top: 3%;
+    overflow:hidden;
+}
+
+#subSection {
+    height: 100%;
+}
+
+/* #divider {
+    width: 75%;
+    margin: 0 133px;
+}
+
+#hr {
+    margin-left: 3%;
+    margin-right: auto;
+    height: 2px;
+    background-color:#5885FB;
+    overflow: hidden;
+
+  } */

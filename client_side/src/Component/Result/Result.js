@@ -6,8 +6,9 @@ import Typography from '@mui/material/Typography';
 import Brightness1RoundedIcon from '@mui/icons-material/Brightness1Rounded';
 import Button from '@mui/material/Button';
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import './Result.css'
 
-const Result = ({hidden, scoreResult, isEmpty, chartData, chart }) => {
+const Result = ({hidden, scoreResult, isEmpty, chartData, chart, chartLength }) => {
 
     function Score({ scoreResult }) {
         switch (scoreResult) {
@@ -77,7 +78,7 @@ const Result = ({hidden, scoreResult, isEmpty, chartData, chart }) => {
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="label" />
-                <YAxis tickCount={4} />
+                <YAxis tickCount={chartLength} />
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="score" fill="#8884d8" />
