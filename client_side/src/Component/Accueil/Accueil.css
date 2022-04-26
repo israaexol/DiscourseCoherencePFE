@@ -42,7 +42,10 @@
     margin-right: 2%;
     width: 200px;
     height: 50px;
-    background: #F4C20D;
+    /* background: #F4C20D; */
+    /* Blue */
+    /* background: #00bcd4; */
+    background: #0288d1;
     box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.25);
     border-radius: 14px;
     border: none;
@@ -107,10 +110,10 @@
     width: 100%;
 }
 
-.file-inputs{
+.file-inputs {
     display: flex;
     justify-content: center;
-
+    width: 100%;
 }
 
 #firstSection {
@@ -121,7 +124,7 @@
     width: 80%;
     height: 100px;
     margin-bottom: 10px;
-    overflow:hidden;
+    overflow: hidden;
 }
 
 #secondSection {
@@ -131,7 +134,7 @@
     width: 80%;
     height: 85px;
     margin-top: 3%;
-    overflow:hidden;
+    overflow: hidden;
 }
 
 #subSection {

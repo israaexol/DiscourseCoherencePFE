@@ -20,7 +20,8 @@ import ThreeSixtyIcon from '@mui/icons-material/ThreeSixty';
 import Typography from '@mui/material/Typography';
 import LooksOneIcon from '@mui/icons-material/LooksOne';
 import LooksTwoIcon from '@mui/icons-material/LooksTwo';
-
+import { color } from '@mui/system';
+import {lightBlue} from '@mui/material/colors'
 const Accueil = () => {
 
   const [text, setText] = useState("");
@@ -216,7 +217,7 @@ const Accueil = () => {
                 }}
             >
                 <Item sx={{ backgroundColor: 'none', height:'50px', width: '100%' }}>
-                  <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><LooksOneIcon sx={{ margin: '0 18px', height: '6%', width: '6%' }}/>Insertion des données</Typography>
+                  <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><LooksOneIcon sx={{ margin: '0 18px', height: '6%', width: '6%', color:"#ffab00" }}/>Insertion des données</Typography>
                 </Item>
                 <Item sx={{ backgroundColor: 'none', marginRight: '10%' }}>
                   <Button variant="outlined" startIcon={<ThreeSixtyIcon />} onClick={handleRefresh}>
@@ -254,7 +255,7 @@ const Accueil = () => {
                 textAlign: 'center'
                 }}
             >
-              <Item>
+              <Item >
                 <div className="file-inputs">
                   <Button type="button" id='import_btn' onClick={handleImport}>Importer un fichier</Button>
                   <input type="file" ref={hiddenFileInput} onChange={handleChange} style={{ display: 'none' }} />
@@ -279,7 +280,7 @@ const Accueil = () => {
                     }}
                 >
                     <Item sx={{ backgroundColor: 'none', height:'50px', width: '100%' }}>
-                      <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><LooksTwoIcon sx={{ margin: '0 18px', height: '5%', width: '5%' }}/>Sélection du modèle</Typography>
+                      <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><LooksTwoIcon sx={{ margin: '0 18px', height: '5%', width: '5%',color:"#ffab00"}}/>Sélection du modèle</Typography>
                     </Item>
                 </Box>
               </div>          
