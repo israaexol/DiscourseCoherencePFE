@@ -36,6 +36,7 @@ const Accueil = () => {
   const [data, setData] = useState(null)
   const [scoreResult, setScore] = useState(null);
   const [chartLength, setChartLength] = useState(0);
+  const [fileName, setFileName] = useState(null)
 
 
   const handleSubmit = (event) => {
@@ -131,6 +132,7 @@ const Accueil = () => {
       let dataFile = new FormData();
       dataFile.append('file', fileUploaded);
       setData(dataFile)
+      setFileName(fileUploaded.name)
     }
   };
 
@@ -257,7 +259,7 @@ const Accueil = () => {
             >
               <Item >
                 <div className="file-inputs">
-                  <Button type="button" id='import_btn' onClick={handleImport}>Importer un fichier</Button>
+                  <Button type="button" id='import_btn' onClick={handleImport}> {fileName ?? "Importer un fichier"} </Button>
                   <input type="file" ref={hiddenFileInput} onChange={handleChange} style={{ display: 'none' }} />
                 </div>
               </Item>
