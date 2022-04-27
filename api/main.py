@@ -292,19 +292,23 @@ async def get_predict_file(niveau : int , file: UploadFile = File(...)):
     print("============data==============")
     print(data)
     scores = []
+    text_ids =[]
+    texts = []
+    original_scores=[]
     for i in range(len(data)): 
         sample = data[i]['text']
-        print("============sample==============")
-        print(sample)
+        text_ids.append(data[i]['text_id'])
+        texts.append(data[i]['text'])
+        original_scores.append(data[i]['labelA'])
         if niveau == 0:
             model = torch.load('../model/runs/sentavg_model_cv/sentavg_model_cv_best.pt')
             model.eval()
             batch_padded, batch_lengths, original_index = preprocess_data_sentavg(sample)
-            print('===================batch_padded===================')
-            print(batch_padded)
+            # print('===================batch_padded===================')
+            # print(batch_padded)
             pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
-            print('====================pred=========================')
-            print(pred)
+            # print('====================pred=========================')
+            # print(pred)
             argmax  = list(np.argmax(pred.cpu().data.numpy(), axis=1))
             score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
             scores.append(score)
@@ -339,7 +343,7 @@ async def get_predict_file(niveau : int , file: UploadFile = File(...)):
     
     
     print(scores)
-    return {"data":  scores}
+    return {"data":  {"scores" : scores, "text_ids" : text_ids, "texts" : texts, "original_scores" : original_scores}}
 
 
 # Configuring the server host and port

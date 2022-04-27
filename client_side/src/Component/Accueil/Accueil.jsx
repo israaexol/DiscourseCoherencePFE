@@ -20,8 +20,7 @@ import ThreeSixtyIcon from '@mui/icons-material/ThreeSixty';
 import Typography from '@mui/material/Typography';
 import LooksOneIcon from '@mui/icons-material/LooksOne';
 import LooksTwoIcon from '@mui/icons-material/LooksTwo';
-import { color } from '@mui/system';
-import {lightBlue} from '@mui/material/colors'
+
 const Accueil = () => {
 
   const [text, setText] = useState("");
@@ -36,8 +35,12 @@ const Accueil = () => {
   const [data, setData] = useState(null)
   const [scoreResult, setScore] = useState(null);
   const [chartLength, setChartLength] = useState(0);
+  const [array_cell, setArray] = useState(null);
   const [fileName, setFileName] = useState(null)
 
+  function createData(text_id, text, original_score, predicted_score) {
+    return { text_id, text, original_score, predicted_score };
+  }
 
   const handleSubmit = (event) => {
     setLoading(true)
@@ -64,7 +67,8 @@ const Accueil = () => {
         .post('http://localhost:8080/uploadfile?niveau=' + selectedIndex, data)
         .then((res) => {
           const data = res.data.data
-          const score = data
+          const score = data.scores
+          let table_details = []
           setChartLength(score.length)
           let index = 0
           // while (index < score.length) {
@@ -98,12 +102,14 @@ const Accueil = () => {
             } else {
               count_high++
             }
+            let cell = createData(data.text_ids[i], data.texts[i], data.original_scores[i], score[i])
+            table_details.push(cell)
 
           }
           chart_result[0].score = count_low
           chart_result[1].score = count_med
           chart_result[2].score = count_high
-
+          setArray(table_details)
           setState(chart_result)
           setEmpty(false)
           setLoading(false)
@@ -175,12 +181,12 @@ const Accueil = () => {
     }
     else {
       if (state === null) {
-        return <Result hidden={false} scoreResult={scoreResult} isEmpty={true} chartData={null} chart={false} />
+        return <Result hidden={false} scoreResult={scoreResult} isEmpty={true} chartData={null} chart={false} table={null} />
       }
       else {
-        return <Result hidden={false} scoreResult={null} isEmpty={false} chartData={state} chart={true} chartLength={chartLength}/>
+        return <Result hidden={false} scoreResult={null} isEmpty={false} chartData={state} chart={true} chartLength={chartLength} table={array_cell} />
       }
-      
+
     }
 
   }
@@ -205,30 +211,30 @@ const Accueil = () => {
     <>
       <Sidebar selectedIndex={selectedIndex} />
       <div id="firstSection">
-          <div style={{ marginTop: '1%' }} >
-            <Box
-                sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                p: 1,
-                justifyContent: 'space-between',
-                position: 'relative',
-                width: '75%',
-                height: '60px',
-                margin: '1px 133px'
-                }}
-            >
-                <Item sx={{ backgroundColor: 'none', height:'50px', width: '100%' }}>
-                  <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><LooksOneIcon sx={{ margin: '0 18px', height: '6%', width: '6%', color:"#ffab00" }}/>Insertion des données</Typography>
-                </Item>
-                <Item sx={{ backgroundColor: 'none', marginRight: '10%' }}>
-                  <Button variant="outlined" startIcon={<ThreeSixtyIcon />} onClick={handleRefresh}>
-                    Rafraîchir
-                  </Button>
-                </Item>
-            </Box>
-          </div>          
-      </div>     
+        <div style={{ marginTop: '1%' }} >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'row',
+              p: 1,
+              justifyContent: 'space-between',
+              position: 'relative',
+              width: '75%',
+              height: '60px',
+              margin: '1px 133px'
+            }}
+          >
+            <Item sx={{ backgroundColor: 'none', height: '50px', width: '100%' }}>
+              <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><LooksOneIcon sx={{ margin: '0 18px', height: '6%', width: '6%', color: "#ffab00" }} />Insertion des données</Typography>
+            </Item>
+            <Item sx={{ backgroundColor: 'none', marginRight: '10%' }}>
+              <Button variant="outlined" startIcon={<ThreeSixtyIcon />} onClick={handleRefresh}>
+                Rafraîchir
+              </Button>
+            </Item>
+          </Box>
+        </div>
+      </div>
       <div className='form'>
         <Form onSubmit={handleSubmit}>
           <div className='input_text'>
@@ -245,54 +251,54 @@ const Accueil = () => {
           </div>
           <br />
           <Box
-                sx={{
-                display: 'flex',
-                flexDirection: 'row-reverse',
-                p: 1,
-                justifyContent: 'flex-start',
-                position: 'absolute',
-                width: '63%',
-                height: '80px',
-                marginTop: '-1%',
-                textAlign: 'center'
-                }}
-            >
-              <Item >
-                <div className="file-inputs">
-                  <Button type="button" id='import_btn' onClick={handleImport}> {fileName ?? "Importer un fichier"} </Button>
-                  <input type="file" ref={hiddenFileInput} onChange={handleChange} style={{ display: 'none' }} />
-                </div>
-              </Item>
-              <Item><Typography sx={{ fontFamily: 'Poppins', fontSize: '16px', padding: '50% 0px' }}>Ou</Typography></Item>
+            sx={{
+              display: 'flex',
+              flexDirection: 'row-reverse',
+              p: 1,
+              justifyContent: 'flex-start',
+              position: 'absolute',
+              width: '63%',
+              height: '80px',
+              marginTop: '-1%',
+              textAlign: 'center'
+            }}
+          >
+            <Item >
+              <div className="file-inputs">
+                <Button type="button" id='import_btn' onClick={handleImport}> {fileName ?? "Importer un fichier"} </Button>
+                <input type="file" ref={hiddenFileInput} onChange={handleChange} style={{ display: 'none' }} />
+              </div>
+            </Item>
+            <Item><Typography sx={{ fontFamily: 'Poppins', fontSize: '16px', padding: '50% 0px' }}>Ou</Typography></Item>
           </Box>
-          
+
           {/* <Button type="button" id='import_btn' onClick={handleImport}>Importer un fichier</Button> */}
 
           <div id="secondSection">
-              <div>
-                <Box
-                    sx={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    position: 'relative',
-                    width: '75%',
-                    height: '60px',
-                    margin: '10px 133px'
-                    }}
-                >
-                    <Item sx={{ backgroundColor: 'none', height:'50px', width: '100%' }}>
-                      <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><LooksTwoIcon sx={{ margin: '0 18px', height: '5%', width: '5%',color:"#ffab00"}}/>Sélection du modèle</Typography>
-                    </Item>
-                </Box>
-              </div>          
+            <div>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  position: 'relative',
+                  width: '75%',
+                  height: '60px',
+                  margin: '10px 133px'
+                }}
+              >
+                <Item sx={{ backgroundColor: 'none', height: '50px', width: '100%' }}>
+                  <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><LooksTwoIcon sx={{ margin: '0 18px', height: '5%', width: '5%', color: "#ffab00" }} />Sélection du modèle</Typography>
+                </Item>
+              </Box>
             </div>
-            
+          </div>
+
           <div className='eval_anal'>
-            
+
             <div id='analyser_btn'>
-              <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button" sx={{zIndex: 1}}>
-                <Button onClick={handleClick} sx={{width: '400px'}} >{options[selectedIndex]}</Button>
+              <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button" sx={{ zIndex: 1 }}>
+                <Button onClick={handleClick} sx={{ width: '400px' }} >{options[selectedIndex]}</Button>
                 <Button
                   size="small"
                   aria-controls={open ? 'split-button-menu' : undefined}
@@ -340,7 +346,7 @@ const Accueil = () => {
             </div>
             <Button type="submit" id='eval_btn'>Évaluer</Button>
           </div>
-          <RenderResult isLoading={isLoading}/>
+          <RenderResult isLoading={isLoading} />
         </Form>
       </div>
     </>
