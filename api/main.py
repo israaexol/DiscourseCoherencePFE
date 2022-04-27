@@ -297,7 +297,7 @@ async def get_predict_file(niveau : int , file: UploadFile = File(...)):
         print("============sample==============")
         print(sample)
         if niveau == 0:
-            model = torch.load('../model/runs/sent_avg_model/sent_avg_model_best.pt')
+            model = torch.load('../model/runs/sentavg_model_cv/sentavg_model_cv_best.pt')
             model.eval()
             batch_padded, batch_lengths, original_index = preprocess_data_sentavg(sample)
             print('===================batch_padded===================')
@@ -310,7 +310,7 @@ async def get_predict_file(niveau : int , file: UploadFile = File(...)):
             scores.append(score)
       
         elif niveau == 1:
-            model = torch.load('../model/runs/par_seq_model/par_seq_model_best.pt')
+            model = torch.load('../model/runs/parseq_model_cv/parseq_model_cv_best.pt')
             model.eval()
             batch_padded, batch_lengths, original_index = preprocess_data_parseq(sample)
             pred, avg_deg = model.forward(batch_padded, batch_lengths, original_index, dim = 1)
