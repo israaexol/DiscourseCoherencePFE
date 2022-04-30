@@ -52,7 +52,8 @@ const Accueil = () => {
         .post('http://localhost:8080/evaluate/', params)
         .then((res) => {
           const data = res.data.data
-          const msg = `${data.score}`
+          let msg = data.score
+          msg++
           divelement.hidden = false
           setScore(msg)
           setLoading(false)
@@ -71,10 +72,10 @@ const Accueil = () => {
           let table_details = []
           setChartLength(score.length)
           let index = 0
-          // while (index < score.length) {
-          //   score[index]++;
-          //   index++;
-          // }
+          while (index < score.length) {
+            score[index]++;
+            index++;
+          }
           // alert(score)
           // var myArray = JSON.Parse(score);
           let chart_result = [
@@ -95,9 +96,9 @@ const Accueil = () => {
           let count_med = 0
           let count_high = 0
           for (var i = 0; i < score.length; i++) {
-            if (score[i] == 0) {
+            if (score[i] == 1) {
               count_low++
-            } else if (score[i] == 1) {
+            } else if (score[i] == 2) {
               count_med++
             } else {
               count_high++
