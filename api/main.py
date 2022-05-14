@@ -428,7 +428,7 @@ def get_all_models(token: str = Depends(oauth2_scheme), db: Session = Depends(ge
 @app.get('/models/{model_id}', response_model=SchemaModel, status_code=200)
 def get_one_model(model_id: int, db: Session = Depends(get_db)):
     db_model = db.query(ModelModel).filter(
-        ModelModel.id == model_id and ModelModel.visibility == True).first()
+        ModelModel.id == model_id).first()
     if db_model is None:
         raise HTTPException(status_code=404, detail="Model non existant")
     return db_model
