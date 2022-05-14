@@ -416,7 +416,7 @@ async def get_predict_file(niveau: int, file: UploadFile = File(...)):
 
 
 @app.get('/models/', response_model=List[SchemaModel], status_code=200)
-def get_all_models(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_all_models(db: Session = Depends(get_db)): #token: str = Depends(oauth2_scheme)
     list_models = db.query(ModelModel).all()
     return list_models
 
@@ -457,7 +457,7 @@ def get_models_name(db: Session = Depends(get_db)):
 
 
 @app.post('/add_model', response_model=SchemaModel)
-def add_model(model: SchemaModel, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+def add_model(model: SchemaModel, db: Session = Depends(get_db)): #token: str = Depends(oauth2_scheme)
     db_model_name = db.query(ModelModel).filter(
         ModelModel.name == model.name).first()
     if db_model_name:
@@ -472,7 +472,7 @@ def add_model(model: SchemaModel, db: Session = Depends(get_db), token: str = De
 
 
 @app.put("/update_model/{model_id}", response_model=SchemaModel)
-def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db)): #token: str = Depends(oauth2_scheme)
     model_to_update = db.query(ModelModel).filter(
         ModelModel.id == model_id).first()
     if model.name:
@@ -492,7 +492,7 @@ def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db
 
 
 @app.put("/update_model_visibility/{model_id}", response_model=SchemaModel)
-def update_model_vis(model_id: int, visib: bool, db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+def update_model_vis(model_id: int, visib: bool, db: Session = Depends(get_db)): #token: str = Depends(oauth2_scheme)
     model_to_update = db.query(ModelModel).filter(
         ModelModel.id == model_id).first()
     model_to_update.visibility = visib
