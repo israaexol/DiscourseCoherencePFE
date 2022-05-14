@@ -1,0 +1,54 @@
+@app.post("/login", response_model=Token) 
+
+    type: form_data
+    elements : username : str,
+               password : str
+
+
+@app.get('/models/', response_model=List[SchemaModel], status_code=200) // retourne la liste de tous les modèles de la bdd (visibility true et false) 
+        token obligatoire
+
+
+@app.get('/models/{model_id}', response_model=SchemaModel, status_code=200) // retourne un modèle spécifié par son id (interface modification)
+    token obligatoire
+    
+    model_id : int
+
+
+@app.get('/description/{model_id}', status_code=200) // retourne la description d'un seul modèle donné par son id (interface sidebar)
+    model_id : int
+
+@app.get('/names/', status_code=200) // retourne les noms des modèles pour la liste déroulante
+
+@app.post('/add_model', response_model=SchemaModel) // ajouter un modèle à la bdd
+    token obligatoire
+
+    la structure de l'input : 
+                id : int // automatique, ne pas spécifier le id 
+                name : str
+                description : Text
+                F1_score : str
+                precision : str
+                accuracy : str
+                visibility : bool () // automatique True, ne pas spécifier
+
+@app.put("/update_model/{model_id}", response_model=SchemaModel) // Modifier les paramètres du modèle sans la visibilité
+    token obligatoire
+
+    la structure de l'input : 
+                spécifier l'id : int
+              les paramètres : // si un des paramètres est non modifiable laisser à ""
+                    name : str
+                    description : Text
+                    F1_score : str
+                    precision : str
+                    accuracy : str
+
+@app.put("/update_model_visibility/{model_id}", response_model=SchemaModel) // Modifier la visibilité du modèle 
+    token obligatoire
+
+ la structure de l'input : 
+                spécifier l'id : int
+                
+                visib : bool(False / True)
+
