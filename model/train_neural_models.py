@@ -127,7 +127,10 @@ def train(params, training_docs, test_docs, data, model):
                 loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
             elif params['model_type']== 'cnn_pos_tag': 
                 pred_coherence = model(batch_padded, batch_lengths, original_index)
-                loss = loss_fn(pred_coherence, Variable(LongTensor(orig_batch_labels))) 
+                if params['task'] == 'score_pred':
+                    loss = loss_fn(pred_coherence, Variable(FloatTensor(orig_batch_labels)))
+                else:
+                    loss = loss_fn(pred_coherence, Variable(LongTensor(orig_batch_labels))) 
             else: 
                 pred_coherence, avg_deg_train= model(batch_padded, batch_lengths, original_index)
                 if params['task'] == 'score_pred':
@@ -213,9 +216,24 @@ def train_cv(params, data_docs, data, model):
         for train, test in kfold.split(np.zeros(4800), labels):
             training_data = np.array(data_docs)[train]
             test_data = np.array(data_docs)[test]
-            training_data, training_labels, train_ids = data.create_doc_sents(training_data, 'paragraph', params['task'],
-                                                                          params['train_data_limit'])
-            test_data, test_labels, test_ids = data.create_doc_sents(test_data, 'paragraph', params['task'], params['train_data_limit'])
+            if params['model_type'] == 'sent_avg':
+                training_data, training_labels, train_ids = data.create_doc_sents(training_data, 'sentence', params['task'], params['train_data_limit'])
+                test_data, test_labels, test_ids = data.create_doc_sents(test_data, 'sentence', params['task'], params['train_data_limit'])
+
+            elif params['model_type'] == 'par_seq':
+                training_data, training_labels, train_ids = data.create_doc_sents(training_data, 'paragraph', params['task'],
+                                                                                params['train_data_limit'])
+                test_data, test_labels, test_ids = data.create_doc_sents(test_data, 'paragraph', params['task'], params['train_data_limit'])
+
+            elif params['model_type']=='sem_rel':
+                training_data, training_labels, train_ids = data.create_doc_sents(training_data, 'paragraph', params['task'],
+                                                                                params['train_data_limit'])
+                test_data, test_labels, test_ids = data.create_doc_sents(test_data, 'paragraph', params['task'], params['train_data_limit'])
+
+            elif params['model_type']=='cnn_pos_tag':
+                training_data, training_labels, train_ids = data.create_doc_sents(training_data, 'sentence', params['task'],
+                                                                                params['train_data_limit'])
+                test_data, test_labels, test_ids = data.create_doc_sents(test_data, 'sentence', params['task'], params['train_data_limit'])
 
             steps = int(len(training_data) / params['batch_size'])
             indices = list(range(len(training_data)))
@@ -258,7 +276,10 @@ def train_cv(params, data_docs, data, model):
                     loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
                     
                 else: 
-                    pred_coherence = model(batch_padded, batch_lengths, original_index)
+                    if params['model_type']=='sent_avg' or params['model_type']=='par_seq':
+                        pred_coherence, avg_deg = model(batch_padded, batch_lengths, original_index)
+                    else:
+                        pred_coherence = model(batch_padded, batch_lengths, original_index)
                     if params['task'] == 'score_pred':
                         loss = loss_fn(pred_coherence, Variable(FloatTensor(orig_batch_labels)))
                     else:
@@ -302,27 +323,20 @@ def train_cv(params, data_docs, data, model):
     return best_test_acc
 
 
-def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_sem):
+def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_fusion):
     
     if USE_CUDA:
-        model_cnn.cuda()
-        model_sem.cuda()
+        model_fusion.cuda()
         
-    parameters_cnn = filter(lambda p: p.requires_grad, model_cnn.parameters())
-    parameters_sem = filter(lambda p: p.requires_grad, model_sem.parameters())
+    parameters = filter(lambda p: p.requires_grad, model_fusion.parameters())
+    optimizer = optim.Adam(parameters, weight_decay=params['l2_reg'])
     
-    optimizer_cnn = optim.Adam(parameters_cnn, weight_decay=params['l2_reg'])
-    optimizer_sem = optim.Adam(parameters_sem, weight_decay=params['l2_reg'])
-    
-    scheduler_cnn = None
-    scheduler_sem = None
+    scheduler = None
     if params['lr_decay'] == 'step':
-        scheduler_cnn = StepLR(optimizer_cnn, step_size=30, gamma=0.1)
-        scheduler_sem = StepLR(optimizer_sem, step_size=30, gamma=0.1)
+        scheduler = StepLR(optimizer, step_size=30, gamma=0.1)
     elif params['lr_decay'] == 'lambda':
         lambda1 = lambda epoch: 0.95 ** epoch
-        scheduler_cnn = LambdaLR(optimizer_cnn, lr_lambda=[lambda1])
-        scheduler_sem = LambdaLR(optimizer_sem, lr_lambda=[lambda1])
+        scheduler = LambdaLR(optimizer, lr_lambda=[lambda1])
     if params['task'] == 'class':
         loss_fn = torch.nn.CrossEntropyLoss()
     elif params['task'] == 'score_pred':
@@ -335,16 +349,12 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_se
     kfold = StratifiedKFold(n_splits = 10, shuffle = False) 
     for epoch in range(params['num_epochs']):
         if params['lr_decay'] == 'lambda' or params['lr_decay'] == 'step':
-            scheduler_cnn.step()
-            scheduler_sem.step()
-            print("optimizer CNN_POS_TAG")
-            print(optimizer_cnn.param_groups[0]['lr'])
-            print("optimizer SEM_REL")
-            print(optimizer_sem.param_groups[0]['lr'])
+            scheduler.step()
+            print("optimizer")
+            print(optimizer.param_groups[0]['lr'])
         print("EPOCH " + str(epoch))
         total_loss = 0
-        model_cnn.train()
-        model_sem.train()
+        model_fusion.train()
 
         labels = []
         for i in range(len(data_docs_cnn)): #the labels are the same for both models
@@ -356,12 +366,12 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_se
             test_data_cnn = np.array(data_docs_cnn)[test]
             test_data_sem = np.array(data_docs_sem)[test]
             
-            training_data_cnn, training_labels_cnn, train_ids_cnn = data.create_doc_sents(training_data_cnn, 'paragraph', params['task'],
+            training_data_cnn, training_labels_cnn, train_ids_cnn = data.create_doc_sents(training_data_cnn, 'sentence', params['task'],
                                                                           params['train_data_limit'])
             training_data_sem, training_labels_sem, train_ids_sem = data.create_doc_sents(training_data_sem, 'paragraph', params['task'],
                                                                           params['train_data_limit'])
             
-            test_data_cnn, test_labels_cnn, test_ids_cnn = data.create_doc_sents(test_data_cnn, 'paragraph', params['task'], params['train_data_limit'])
+            test_data_cnn, test_labels_cnn, test_ids_cnn = data.create_doc_sents(test_data_cnn, 'sentence', params['task'], params['train_data_limit'])
             test_data_sem, test_labels_sem, test_ids_sem = data.create_doc_sents(test_data_sem, 'paragraph', params['task'], params['train_data_limit'])
 
             steps = int(len(training_data_cnn) / params['batch_size']) #same steps for both
@@ -374,28 +384,20 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_se
                 sentences_cnn, orig_batch_labels = data.get_batch(training_data_cnn, training_labels_cnn, batch_ind, params['model_type'])
                 sentences_sem, orig_batch_labels = data.get_batch(training_data_sem, training_labels_cnn, batch_ind, params['model_type'])
 
-                batch_padded_cnn, batch_lengths_cnn, original_index = data.pad_to_batch(sentences_cnn, data.word_to_idx, params['model_type'])
-                batch_padded_sem, batch_lengths_sem, original_index = data.pad_to_batch(sentences_sem, data.word_to_idx, params['model_type'])
-
-                model_cnn.zero_grad()
-                model_sem.zero_grad()
-                if params['model_type'] == 'sem_rel' or params['model_type'] == 'fusion_sem_syn':
+                batch_padded_cnn, batch_lengths_cnn, original_index = data.pad_to_batch(sentences_cnn, data.word_to_idx, 'cnn_pos_tag')
+                batch_padded_sem, batch_lengths_sem, original_index = data.pad_to_batch(sentences_sem, data.word_to_idx, 'sem_rel')
+                print("============= batch padded cnn ================")
+                print(batch_padded_cnn)
+                print("============= batch padded sem ================")
+                print(batch_padded_sem)
+                model_fusion.zero_grad()
+                if params['model_type'] == 'fusion_sem_syn':
                     y_pred = []
-                    coherence_pred_cnn = model_cnn(batch_padded_cnn, batch_lengths_cnn, original_index)
-                    coherence_pred_cnn_Tensor = coherence_pred_cnn
-                    coherence_pred_cnn = coherence_pred_cnn.tolist()
-                    
-                    coherence_pred_sent, coherence_pred_par = model_sem(batch_padded_sem, batch_lengths_sem, original_index)
-                    coherence_pred_sem_sentTensor = coherence_pred_sent
-                    coherence_pred_sent = coherence_pred_sent.tolist()
-                    
-                    coherence_pred_sem_parTensor = coherence_pred_par
-                    coherence_pred_par = coherence_pred_par.tolist() 
-                                       
+                    coherence_pred_sent, coherence_pred_par, coherence_pred_cnn = model_fusion(batch_padded_sem, batch_padded_cnn, batch_lengths_sem, batch_lengths_cnn, original_index)
                     #gather coherence predictions into one array
-                    y_pred.append(coherence_pred_cnn)
-                    y_pred.append(coherence_pred_sent)
-                    y_pred.append(coherence_pred_par)
+                    y_pred.append(coherence_pred_sent.detach().numpy())
+                    y_pred.append(coherence_pred_par.detach().numpy())
+                    y_pred.append(coherence_pred_cnn.detach().numpy())
                     
                     y_pred = np.array(y_pred)
                     for weights in product(w, repeat=3):
@@ -412,20 +414,15 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_se
                             best_weights = weights
                             best_weights = list(best_weights)
                     
-                    coherence_pred_cnn = torch.mul(coherence_pred_cnn_Tensor, best_weights[0])
-                    coherence_pred_sent = torch.mul(coherence_pred_sem_sentTensor, best_weights[1])
-                    coherence_pred_par = torch.mul(coherence_pred_sem_parTensor, best_weights[2])
-                    final_prediction1 = coherence_pred_sent.add(coherence_pred_par)
-                    final_pred = final_prediction1.add(coherence_pred_cnn)
-                    #final_pred = model(batch_padded, batch_lengths, original_index, weights=best_weights)
+                    final_pred = model_fusion(batch_padded_sem, batch_padded_cnn, batch_lengths_sem, batch_lengths_cnn, original_index, weights=best_weights)
+                    pickle.dump(best_weights, open('best_weights_fusion.pkl', 'wb'))
                     loss_fn = torch.nn.CrossEntropyLoss()
                     loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
                     
                 mean_loss = loss / params["batch_size"]
                 mean_loss.backward()
                 total_loss += loss.cpu().data.numpy()
-                optimizer_cnn.step()
-                optimizer_sem.step()
+                optimizer.step()
             fold = 0
             current_time = time.time()
             print("Time %-5.2f min" % ((current_time - timestamp) / 60.0))
@@ -434,7 +431,7 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_se
             if params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq' or params['model_type'] == 'sem_rel' or params['model_type'] == 'cnn_pos_tag' or params['model_type'] == 'fusion_sem_syn':
                 
                 if params['model_type'] == 'fusion_sem_syn':
-                    test_accuracy, test_loss = eval_docs_fusion(model_cnn, model_sem, loss_fn, test_data_cnn, test_data_sem, test_labels_cnn, data, params)                                 
+                    test_accuracy, test_loss = eval_docs_fusion(model_fusion, loss_fn, test_data_cnn, test_data_sem, test_labels_cnn, data, params)                                 
                 print("Fold" + str(fold) + " - Test loss: %0.3f" % test_loss)
                 if params['task'] == 'score_pred':
                     print("Test correlation: %0.5f" % (test_accuracy))
@@ -444,8 +441,7 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_se
             if test_accuracy > best_test_acc:
                 best_test_acc = test_accuracy
                 # save best model
-                torch.save(model_cnn.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best')
-                torch.save(model_sem.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best')
+                torch.save(model_fusion.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best.pt')
                 print('saved model ' + params['model_dir'] + '/' + params['model_name'] + '_best')
             print()
             fold += 1

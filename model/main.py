@@ -156,6 +156,13 @@ elif params['cross_val'] == 0 and params['pos_tag'] == 1 and params['task'] == '
     test_docs = data.read_data_class_tag(params, 'test')
     model = CNNPosTag(params, data)
     train(params, training_docs, test_docs, data, model)
+    
+# Modèle de régression du niveau sémantique pour capturer la transition entre les paragraphes
+elif params['cross_val'] == 0 and params['pos_tag'] == 1 and params['task'] == 'score_pred' and params['model_type'] == 'cnn_pos_tag':
+    training_docs = data.read_data_class_tag(params, 'train')
+    test_docs = data.read_data_class_tag(params, 'test')
+    model = CNNPosTag(params, data)
+    train(params, training_docs, test_docs, data, model)
 
 # Modèle de classification du niveau sémantique pour capturer la transition entre les phrases seulement avec la validation croisée
 elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'sent_avg':
@@ -170,6 +177,13 @@ elif params['cross_val'] == 0 and params['task'] == 'class' and params['model_ty
     model = LSTMSentAvg(params, data)
     best_test_acc = train(params, training_docs, test_docs, data, model)
 
+# Modèle de régression du niveau sémantique pour capturer la transition entre les phrases seulement
+elif params['cross_val'] == 0 and params['task'] == 'score_pred' and params['model_type'] == 'sent_avg':
+    training_docs = data.read_data_class(params, 'train')
+    test_docs = data.read_data_class(params, 'test')
+    model = LSTMSentAvg(params, data)
+    best_test_acc = train(params, training_docs, test_docs, data, model)
+    
 # Modèle de classification du niveau sémantique pour capturer la transition entre les paragraphes avec la validation croisée
 elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'par_seq':
     data_docs = data.read_data_class_cv(params)
@@ -178,6 +192,13 @@ elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_ty
     
 # Modèle de classification du niveau sémantique pour capturer la transition entre les paragraphes
 elif params['cross_val'] == 0 and params['task'] == 'class' and params['model_type'] == 'par_seq':
+    training_docs = data.read_data_class(params, 'train')
+    test_docs = data.read_data_class(params, 'test')
+    model = LSTMParSeq(params, data)
+    best_test_acc = train(params, training_docs, test_docs, data, model)
+    
+# Modèle de régression du niveau sémantique pour capturer la transition entre les paragraphes
+elif params['cross_val'] == 0 and params['task'] == 'score_pred' and params['model_type'] == 'par_seq':
     training_docs = data.read_data_class(params, 'train')
     test_docs = data.read_data_class(params, 'test')
     model = LSTMParSeq(params, data)

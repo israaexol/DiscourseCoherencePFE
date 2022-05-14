@@ -14,7 +14,7 @@ class LSTMParSeq(nn.Module):
 
     def __init__(self, params, data_obj):
         super(LSTMParSeq, self).__init__()
-        sys.stdout = open('parseq_CV5.txt', 'w')
+        sys.stdout = open('parseQQ.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']

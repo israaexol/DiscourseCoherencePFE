@@ -16,7 +16,7 @@ class CNNPosTag(nn.Module):
     def __init__(self, params, data_obj):
         super(CNNPosTag, self).__init__()
         self.params = params
-        sys.stdout = open('CNNPosTag_CV.txt', 'w')
+        sys.stdout = open('CNNN.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']
@@ -30,7 +30,10 @@ class CNNPosTag(nn.Module):
         self.kernel_4 = 4
         #self.kernel_5 = 5
         self.num_filters=[100, 100, 100, 100]
-        self.num_classes = 3
+        if params['task'] == 'class':
+            self.num_classes = 3
+        elif params['task'] == 'score_pred':
+            self.num_classes = 1
 
         # Number of strides for each convolution
         self.stride = 2
@@ -55,7 +58,6 @@ class CNNPosTag(nn.Module):
         # La définition d'une couche Fully connected
         self.linear = nn.Linear(np.sum(self.num_filters), self.num_classes)
         self.dropout = nn.Dropout(params['dropout'])
-
         self.hidden = None
         
         # initialisation des poids
@@ -124,6 +126,9 @@ class CNNPosTag(nn.Module):
                 # concaténer les prédictions issues des différents documents du batch
                 global_coherence_pred = torch.cat([global_coherence_pred, out], dim=0)
 
+        coherence_pred = global_coherence_pred
         # Pour la classification
-        coherence_pred = F.softmax(global_coherence_pred, dim=dim)
+        if self.task != 'score_pred':
+            coherence_pred = F.softmax(global_coherence_pred, dim=dim) # classification des documents
+        
         return coherence_pred

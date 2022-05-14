@@ -15,7 +15,7 @@ class LSTMSentAvg(nn.Module):
 
     def __init__(self, params, data_obj):
         super(LSTMSentAvg, self).__init__()
-        sys.stdout = open('sentavg.txt', 'w')
+        #sys.stdout = open('sentavg.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']
@@ -59,12 +59,8 @@ class LSTMSentAvg(nn.Module):
         #self.embeddings = word_embeds
         for i in range(len(inputs)):  # itérer sur les documents
             doc_batch_size = len(inputs[i])  # nombre de phrases
-            print('=================doc_batch_size================')
-            print(1)
             self.hidden = self.init_hidden(doc_batch_size)
             seq_tensor = self.embeddings(inputs[i])
-            print('=================seq_tensor================')
-            print(seq_tensor)
             # pack
             packed_input = pack_padded_sequence(
                 seq_tensor, input_lengths[i], batch_first=True)
@@ -72,8 +68,6 @@ class LSTMSentAvg(nn.Module):
             packed_output, (ht, ct) = self.lstm(packed_input, self.hidden)
             # réordonner
             final_output = ht[-1]
-            print('=================final_output================')
-            print(final_output)
             odx = original_index[i].view(-1, 1).expand(
                 len(input_lengths[i]), final_output.size(-1))
             output_unsorted = torch.gather(final_output, 0, Variable(odx))
@@ -113,9 +107,8 @@ class LSTMSentAvg(nn.Module):
             global_deg_vec))), p=self.dropout, training=self.training)
         # La prédiction de cohérence pour chaque document du batch
         coherence_pred = self.predict_layer(global_vectors)
-        print('=================coherence_pred================')
-        print(coherence_pred)
+        score_pred = coherence_pred
 
         if self.task != 'score_pred':
             coherence_pred = F.softmax(coherence_pred, dim=dim) #prédiction
-        return coherence_pred, global_avg_deg
+        return coherence_pred, global_avg_deg, score_pred

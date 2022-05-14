@@ -108,6 +108,8 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
         mse = np.square(np.subtract(np.array(eval_pred), np.expand_dims(np.array(eval_labels), 1))).mean()
         corr = spearmanr(np.array(eval_pred), np.expand_dims(np.array(eval_labels), 1))[0]
         accuracy = corr
+        print("=========== spearman correlation ===========")
+        print(accuracy)
     else:
         accuracy, num_correct, num_total = evaluate(eval_pred, eval_labels, "accuracy")
         print("Accuracy :")
@@ -278,6 +280,8 @@ def eval_docs_fusion(model_cnn, model_sem, loss_fn, eval_data_cnn, eval_data_sem
         mse = np.square(np.subtract(np.array(eval_pred), np.expand_dims(np.array(eval_labels), 1))).mean()
         corr = spearmanr(np.array(eval_pred), np.expand_dims(np.array(eval_labels), 1))[0]
         accuracy = corr
+        print("=========== spearman correlation ===========")
+        print(accuracy)
       
     elif params['task'] == 'minority':
         f05, precision, recall = evaluate(eval_pred, eval_labels, "f05")
