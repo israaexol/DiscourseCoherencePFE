@@ -18,21 +18,24 @@ import Link from '@mui/material/Link';
 export const AjouterModele = ({handleCloseAjout}) => {
 
     const [state, setState] = useState({
-        nom: '',
+        id: 55,
+        name: '',
         description: '',
-        exactitude: '',
+        accuracy: '',
         precision: '',
-        rappel: '',
-        scoref1: ''
+        // rappel: '',
+        F1_score: '',
+        visibility: true
     });
 
     const [errors, setErrors] = useState({})
     const [slide, setSlide] = useState(null)
+    const [slideErr, setSlideErr] = useState(null)
     const [annuler, setAnnuler] = useState(null)
     const [modele, setModele] = useState(null)
     const [success, setSuccess] = useState(false)
-    const { nom, description, exactitude, precision, rappel, scoref1 } = state;
-    const values = { nom, description, exactitude, precision, rappel, scoref1 };
+    const { name, description, accuracy, precision, F1_score } = state;
+    const values = { name, description, accuracy, precision, F1_score };
 
     // handle fields change
     const handleChange = input => e => {
@@ -49,18 +52,18 @@ export const AjouterModele = ({handleCloseAjout}) => {
 
     const validate = (fieldValues = values) => {
         let temp = { ...errors }
-        if ('nom' in fieldValues)
-            temp.nom = fieldValues.nom ? "" : "Ce champs est requis."
+        if ('name' in fieldValues)
+            temp.name = fieldValues.name ? "" : "Ce champs est requis."
         if ('description' in fieldValues)
             temp.description = fieldValues.description ? "" : "Ce champs est requis."
-        if ('exactitude' in fieldValues)
-            temp.exactitude = fieldValues.exactitude ? "" : "Ce champs est requis."
+        if ('accuracy' in fieldValues)
+            temp.accuracy = fieldValues.accuracy ? "" : "Ce champs est requis."
         if ('precision' in fieldValues)
             temp.precision = fieldValues.precision ? "" : "Ce champs est requis."
-        if ('rappel' in fieldValues)
-            temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
-        if ('scoref1' in fieldValues)
-            temp.scoref1 = fieldValues.scoref1 ? "" : "Ce champs est requis."
+        // if ('rappel' in fieldValues)
+        //     temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
+        if ('F1_score' in fieldValues)
+            temp.F1_score = fieldValues.F1_score ? "" : "Ce champs est requis."
         setErrors({
             ...temp
         })
@@ -71,7 +74,7 @@ export const AjouterModele = ({handleCloseAjout}) => {
     
     const message = (
         <div style={{margin:'10px 40px 30px 40px'}}>
-            <Slide direction="up" in={slide} mountOnEnter unmountOnExit>
+            <Slide direction="up" in={slideErr} mountOnEnter unmountOnExit>
                 <Alert severity="error">
                     <strong>Veuillez renseigner les champs requis.</strong>
                 </Alert>
@@ -127,28 +130,27 @@ export const AjouterModele = ({handleCloseAjout}) => {
 
     const addModele = useCallback(
         async () => {
-            window.setTimeout( function(){ window.location.href = "/gestionmodeles" }, 1500 );
-            // await axios.post(`${myServerBaseURL}/api/vehicules`, {
-            //     nom: nom,
-            //     description: description,
-            //     exactitude: exactitude,
-            //     precision: precision,
-            //     rappel: rappel,
-            //     scoref1: scoref1
-            // },
-        //     { headers : { authorization : `Basic ${getToken()}`}})
-        //     .then((response) => {
-        //         setSlide(true)
-        //         setSuccess(true)
-        //         console.log(response);
-        //         window.setTimeout( function(){
-        //             window.location.href = "/gestionmodeles";
-        //         }, 2000 );
-        //       }, (error) => {
-        //         setSlide(true)
-        //         setSuccess(false)
-        //         console.log(error);
-        //       });
+            await axios.post('http://localhost:8080/add_model', {
+                "id": 55,
+                "name" : name,
+                "description" : description,
+                "F1_score": F1_score,
+                "precision" : precision,
+                "accuracy" : accuracy,
+                "visibility": true
+            })
+            .then((response) => {
+                setSlide(true)
+                setSuccess(true)
+                console.log(response);
+                window.setTimeout( function(){
+                    window.location.href = "/gestionmodeles";
+                }, 2000 );
+              }, (error) => {
+                setSlideErr(true)
+                setSuccess(false)
+                console.log(error);
+              });
         }
     )
 
@@ -157,7 +159,7 @@ export const AjouterModele = ({handleCloseAjout}) => {
         if(validate()){
             addModele()
         } else {
-            setSlide(true)
+            setSlideErr(true)
         }
     }
 
@@ -170,16 +172,17 @@ export const AjouterModele = ({handleCloseAjout}) => {
                         <div style={{padding:"5px 40px"}}>
                             <TextField
                                 required
-                                error={errors.nom === "" ? false : ""}
-                                id="nom"
+                                error={errors.name === "" ? false : ""}
+                                id="name"
                                 label="Nom du modèle"
                                 InputLabelProps={{
                                     shrink: true,
                                 }}
                                 variant="outlined"
                                 fullWidth='true'
-                                onChange={handleChange('nom')}
-                                value={values.nom}
+                                onChange={handleChange('name')}
+                                value={values.name}
+                                type='string'
                             />
                         </div>
                         <br></br>
@@ -196,22 +199,24 @@ export const AjouterModele = ({handleCloseAjout}) => {
                                 fullWidth='true'
                                 onChange={handleChange('description')}
                                 defaultValue={values.description}
+                                type='string'
                             />
                         </div>
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
                             <TextField
                                 required
-                                error={errors.exactitude === "" ? false : ""}
-                                id="exactitude"
+                                error={errors.accuracy === "" ? false : ""}
+                                id="accuracy"
                                 label="Exactitude"
                                 InputLabelProps={{
                                     shrink: true,
                                 }}
                                 variant="outlined"
                                 fullWidth='true'
-                                onChange={handleChange('exactitude')}
-                                defaultValue={values.exactitude}
+                                onChange={handleChange('accuracy')}
+                                defaultValue={values.accuracy}
+                                type='string'
                             />
                         </div>
                         <br></br>
@@ -228,10 +233,11 @@ export const AjouterModele = ({handleCloseAjout}) => {
                                 fullWidth='true'
                                 onChange={handleChange('precision')}
                                 defaultValue={values.precision}
+                                type='string'
                             />
                         </div>
-                        <br></br>
-                        <div style={{padding:"5px 40px"}}>
+                        {/* <br></br> */}
+                        {/* <div style={{padding:"5px 40px"}}>
                             <TextField
                                 required
                                 error={errors.rappel === "" ? false : ""}
@@ -245,24 +251,26 @@ export const AjouterModele = ({handleCloseAjout}) => {
                                 onChange={handleChange('rappel')}
                                 defaultValue={values.rappel}
                             />
-                        </div>
+                        </div> */}
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
                             <TextField
                                 required
-                                error={errors.scoref1 === "" ? false : ""}
-                                id="scoref1"
+                                error={errors.F1_score === "" ? false : ""}
+                                id="F1_score"
                                 label="Score F1"
                                 InputLabelProps={{
                                     shrink: true,
                                 }}
                                 variant="outlined"
                                 fullWidth='true'
-                                onChange={handleChange('scoref1')}
-                                defaultValue={values.scoref1}
+                                onChange={handleChange('F1_score')}
+                                defaultValue={values.F1_score}
+                                type='string'
                             />
                         </div>
                         {message}
+                        {successMessage}
                         <div className="flex-container" style={{display: "flex", flexWrap:'wrap', gap:'30px', justifyContent:'center', alignItems:'center'}}>
                             <div>
                                 <Button onClick={handleOpenAnnuler} style={{backgroundColor:"#F5365C", textTransform:"capitalize", color:"white", fontWeight:'bold'}} variant="contained">

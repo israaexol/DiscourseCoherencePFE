@@ -3,6 +3,7 @@ import MUIDataTable from "mui-datatables";
 import { Button, Card, Typography } from '@mui/material';
 import Checkbox from '@mui/material/Checkbox';
 import Container from '@mui/material/Container';
+import CircularProgress from '@mui/material/CircularProgress';
 import Grid from "@mui/material/Grid";
 import Link from '@mui/material/Link';
 import Dialog from '@mui/material/Dialog';
@@ -17,57 +18,58 @@ const ListeModele = () => {
 
 const [modelName, setModelName] = useState("")
 const [rowIndex, setRowIndex] = useState(0)
-const [listModeles, setListeModeles] = useState({})
-const [redListeModeles, setRedListeModeles] = useState(null)
-
+const [listModeles, setListeModeles] = useState(null)
+const [redListeModeles, setRedListeModeles] = useState([])
 const [modele, setModele] = useState(null);
-const [loading, setLoading] = useState(null);
+const [modeles, setModeles] = useState([]);
+const [loading, setLoading] = useState(true);
 const [checked, setChecked] = useState(true);
 const [responsive, setResponsive] = useState("vertical");
 const [tableBodyHeight, setTableBodyHeight] = useState("400px");
 const [tableBodyMaxHeight, setTableBodyMaxHeight] = useState("");
-const [openAjout, setOpenAjout] = React.useState(false);
-const [openModif, setOpenModif] = React.useState(false);
-
+const [openAjout, setOpenAjout] = useState(false);
+const [openModif, setOpenModif] = useState(false);
+const [modelNames, setModelNames] = useState([])
 
 const handleCheck = (event) => {
     setChecked(event.target.checked);
 };
 
-const data = [
-    ["SentAvg", true],
-    ["ParSeq", false]
-];
+// const data = [
+//     ["SentAvg", true],
+//     ["ParSeq", false]
+// ];
 
-const loadModeles = useCallback(async () => {
-    setLoading(true)
-    axios.get('http://localhost:8080/models').then( res => {
-      const modeles = res;
-      console.log(modeles.data);
-      setListeModeles(modeles.data);
-      setLoading(false)
-    })
-  }, []);
-
+function selectProps(...props){
+    return function(obj){
+      const newObj = {};
+      props.forEach(name =>{
+        newObj[name] = obj[name];
+      });
+      return newObj;
+    }
+  }
 
 //   Charger la liste des modèles
   useEffect(() => {
-    loadModeles();
-    // var listToKeep = ['name', 'visibility'];
-
-    // listToKeep.forEach(obj => {
-    //     setRedListeModeles(listModeles[obj])
-    // });
-    // console.log(redListeModeles)
-  }, [loadModeles]);
-
-
-//   let reducedModelsList = listModeles.map(obj => listToKeep.reduce((newObj, key) => {
-//     newObj[key] = obj[key]
-//     return newObj
-//   }, {}))
-
-// const listeModeles = data.map(obj => Object.values(obj))
+    axios.get('http://localhost:8080/models').then( res => {
+    const {data} = res;
+    console.log(data)
+    // console.log(modeles.data)
+    if(data) {
+        setListeModeles(data);
+            console.log(listModeles)
+            const newList = data.map(selectProps("name", "visibility"));
+            // const liste_modeles = listModeles.map( obj => Object.values(obj) )
+            // console.log(liste_modeles)
+            var temp = newList.map( Object.values );
+            setRedListeModeles(temp)
+            // getModelNames()
+            setLoading(false)
+            // setModeles(liste_modeles)
+    }
+    })
+  }, []);
 
 const columns = [
     {
@@ -78,7 +80,7 @@ const columns = [
         name: "visibility",
         label: "Visibilité",
         options: {
-        customBodyRender: (value, tableMeta, updateValue) => {
+        customBodyRender: () => {
             return (
             // <EtatVehiculeCol
             //     value={value}
@@ -115,14 +117,28 @@ const columns = [
     }
     ];
 
-const onRowSelection = async(rowData, rowState) => {
-    setModelName(rowData[0]);
-    // let model = modeles.find(modele => modele.nom == modelName)
-    // await setModele(modele);
-    // setModelName(rowData[0]);
+const onRowSelect = (dataIndex) => {
+    console.log(dataIndex)
+}
+
+const onRowSelection = async(dataIndex) => {
+    // onRowSelect(dataIndex)
+    // setModele(dataIndex);
+    setModelName(dataIndex[0]);
+    let model = listModeles.find(modele => modele.name == modelName)
+    // console.log(model)
+    setModele(model);
     // if (!!props.setSel) props.setSel(rowData[0])
-    console.log(modelName)
-    // console.log(modele)
+}
+
+const getModelNames = () => {
+    if(listModeles) {
+        let extractedNames = listModeles.map(item => item["name"]);
+        setModelNames(extractedNames)
+        
+    }
+    console.log(modelNames)
+
 }
 
 const options = {
@@ -218,12 +234,19 @@ const handleCloseModif = () => {
                     + Ajouter
                     </Button>
                 </div>
-                { listModeles ? <MUIDataTable
-                data={data}
-                columns={columns}
-                options={options}
-                /> : <h1>loading</h1>
+                {
+                    loading == true ? 
+                    <div style={{position: "relative", margin: "0px 50%"}}>
+                    <CircularProgress/> 
+                    </div>
+                    : 
+                    <MUIDataTable
+                    data={redListeModeles}
+                    columns={columns}
+                    options={options}
+                    /> 
                 }
+                    
                 
             </Container>
 
@@ -233,7 +256,7 @@ const handleCloseModif = () => {
         <Dialog onClose={handleCloseModif} aria-labelledby="customized-dialog-title" open={openModif} fullWidth='true' maxWidth='sm'>
             <ModifierModele
             handleCloseModif={handleCloseModif} 
-            nomModele={modelName}
+            modele={modele}
             />
         </Dialog>
       </div>

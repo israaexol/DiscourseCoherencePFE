@@ -14,16 +14,18 @@ import axios from "axios";
 const ModifierModele = (props) => {
 
   const [state, setState] = useState({});
+  const [modelID, setModelID] = useState('')
 
-  const nomModele = props.nomModele
-  // const myServerBaseURL = "https://autolib-dz.herokuapp.com";
-
-  // const loadModele = useCallback(async () => {
-  //     const response = await axios.get(`${myServerBaseURL}/api/vehicules/${idVehicule}`, { headers : { authorization : `Basic ${getToken()}`}});
-  //     const vehicule = response.data;
-  //     setState(vehicule);
-  //     console.log(state)
-  // }, []);
+  const getModele = () => {
+        if(props.modele) {
+            setState(props.modele)
+            setModelID(props.modele.id)
+        }
+        console.log(state)
+    }
+  useEffect(() => {
+    getModele();
+  }, []);
 
   // handle fields change
   const handleChange = input => e => {
@@ -56,18 +58,18 @@ const ModifierModele = (props) => {
 
   const validate = (fieldValues = state) => {
       let temp = { ...errors }
-      if ('nom' in fieldValues)
-          temp.nom = fieldValues.nom ? "" : "Ce champs est requis."
+      if ('name' in fieldValues)
+          temp.name = fieldValues.name ? "" : "Ce champs est requis."
       if ('description' in fieldValues)
           temp.description = fieldValues.description ? "" : "Ce champs est requis."
-      if ('exactitude' in fieldValues)
-          temp.exactitude = fieldValues.exactitude ? "" : "Ce champs est requis."
+      if ('accuracy' in fieldValues)
+          temp.accuracy = fieldValues.accuracy ? "" : "Ce champs est requis."
       if ('precision' in fieldValues)
           temp.precision = fieldValues.precision ? "" : "Ce champs est requis."
-      if ('rappel' in fieldValues)
-          temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
-      if ('scoref1' in fieldValues)
-          temp.scoref1 = fieldValues.scoref1 ? "" : "Ce champs est requis."
+    //   if ('rappel' in fieldValues)
+    //       temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
+      if ('F1_score' in fieldValues)
+          temp.F1_score = fieldValues.F1_score ? "" : "Ce champs est requis."
       setErrors({
           ...temp
       })
@@ -117,36 +119,37 @@ const ModifierModele = (props) => {
                             setModifSuccess(null)
                             window.location.href = "/gestionmodeles";
                           }, 2000 );
-        // const response = await axios.put(`${myServerBaseURL}/api/vehicules/update/${idVehicule}`, {
-        //     nom: state.nom,
-        //     description: state.description,
-        //     exactitude: state.exactitude,
-        //     precision: state.precision,
-        //     rappel: state.rappel,
-        //     scoref1: state.scoref1
-        //   },
-        //     { headers : 
-        //       { authorization : `Basic ${getToken()}`}})
-        //             .then((response) => {
-        //               setSlideModif(true)
-        //               setModifSuccess(true)
-        //               console.log("modifié")
-        //               console.log(response);
-        //               window.setTimeout( function(){
-        //                   handleCloseConfirmer()
-        //                   setModifSuccess(null)
-        //                   window.location.href = "/vehicules";
-        //                 }, 2000 );
-        //               }, (error) => {
-        //               setSlideModif(true)
-        //               setModifSuccess(false)
-        //               console.log("erreur")
-        //               console.log(error);
-        //               window.setTimeout( function(){
-        //                   handleCloseConfirmer()
-        //                   setModifSuccess(null)
-        //               }, 2000 );
-        //               });
+        const response = await axios.put(`http://localhost:8080/update_model/${modelID}`, {
+            "id": state.id,
+            "name": state.name,
+            "description": state.description,
+            "F1_score": state.F1_score,
+            "precision": state.precision,
+            "accuracy": state.accuracy,
+            "visibility" : state.visibility
+            // rappel: state.rappel,
+            
+          })
+            .then((response) => {
+                setSlideModif(true)
+                setModifSuccess(true)
+                console.log("modifié")
+                console.log(response);
+                window.setTimeout( function(){
+                    handleCloseConfirmer()
+                    setModifSuccess(null)
+                    window.location.href = "/gestionmodeles";
+                }, 2000 );
+                }, (error) => {
+                setSlideModif(true)
+                setModifSuccess(false)
+                console.log("erreur")
+                console.log(error);
+                window.setTimeout( function(){
+                    handleCloseConfirmer()
+                    setModifSuccess(null)
+                }, 2000 );
+                });
       });
 
     const continuer = e => {
@@ -216,16 +219,16 @@ const ModifierModele = (props) => {
                           {/* <InputLabel>Nom du modèle</InputLabel> */}
                           <TextField
                               required
-                              error={errors.nom === "" ? false : ""}
-                              id="nom"
+                              error={errors.name === "" ? false : ""}
+                              id="name"
                               variant="outlined"
                               label="Nom du modèle"
                               InputLabelProps={{
                                 shrink: true,
                               }}
                               fullWidth='true'
-                              onChange={handleChange('nom')}
-                              defaultValue={state.nom}
+                              value={state.name}
+                              onChange={handleChange('name')}
                           />
                         </div>
                         <br></br>
@@ -240,24 +243,24 @@ const ModifierModele = (props) => {
                                 shrink: true,
                               }}
                               fullWidth='true'
+                              value={state.description}
                               onChange={handleChange('description')}
-                              defaultValue={state.description}
                           />
                         </div>
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
                           <TextField
                                 required
-                                error={errors.exactitude === "" ? false : ""}
-                                id="exactitude"
+                                error={errors.accuracy === "" ? false : ""}
+                                id="accuracy"
                                 variant="outlined"
                                 label="Exactitude"
                                 InputLabelProps={{
                                   shrink: true,
                                 }}
                                 fullWidth='true'
-                                onChange={handleChange('exactitude')}
-                                defaultValue={state.exactitude}
+                                value={state.accuracy}
+                                onChange={handleChange('accuracy')}
                             />
                         </div>
                         <br></br>
@@ -272,11 +275,11 @@ const ModifierModele = (props) => {
                                   shrink: true,
                                 }}
                                 fullWidth='true'
+                                value={state.precision}
                                 onChange={handleChange('precision')}
-                                defaultValue={state.precision}
                               />
                         </div>
-                        <br></br>
+                        {/* <br></br>
                         <div style={{padding:"5px 40px"}}>
                           <TextField
                               required
@@ -289,23 +292,23 @@ const ModifierModele = (props) => {
                               }}
                               fullWidth='true'
                               onChange={handleChange('rappel')}
-                              defaultValue={state.rappel}
+                              value={state.rappel}
                             />
-                        </div>
+                        </div> */}
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
                           <TextField
                                 required
-                                error={errors.scoref1 === "" ? false : ""}
-                                id="scoref1"
+                                error={errors.F1_score === "" ? false : ""}
+                                id="F1_score"
                                 variant="outlined"
                                 label="Score F1"
                                 InputLabelProps={{
                                   shrink: true,
                                 }}
                                 fullWidth='true'
-                                onChange={handleChange('scoref1')}
-                                defaultValue={state.scoref1}
+                                value={state.F1_score}
+                                onChange={handleChange('F1_score')}
                             />
                         </div>
                         {message}

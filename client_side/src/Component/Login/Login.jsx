@@ -162,7 +162,7 @@ const Login = (props) => {
             if (data.status == 200) {
                 window.setTimeout(function () {
                     window.location.href = "/accueil";
-                }, 2000);
+                }, 1000);
             }
             return data.json()
 
@@ -178,15 +178,12 @@ const Login = (props) => {
         }
         )
     }
+
     const Connexion = async e => {
         e.preventDefault();
         const token_api = await login(bodyFormData);
         setToken(token_api.access_token)
-
-
     }
-
-
 
     const message = (
         <div style={{ margin: '10px 40px 30px 40px' }}>
@@ -251,7 +248,6 @@ const Login = (props) => {
                                     Se connecter
                                 </Button>
                                 {message}
-                                <h1>{token}</h1>
                             </form>
                         </div>
                     </Grid>
