@@ -37,6 +37,10 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
     eval_pred = []
     eval_labels = []
     global_avg_deg_test = []
+    global_accuracy_scores = []
+    global_precision_scores = []
+    global_recall_scores = []
+    global_scoref1_scores = []
     best_weights = None
     best_score = 0
     w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -199,7 +203,7 @@ def evaluate(pred_labels, labels, type):
         len(pred_labels)), num_correct, num_total
 
 
-def eval_docs_fusion(model_cnn, model_sem, loss_fn, eval_data_cnn, eval_data_sem, labels, data_obj, params):
+def eval_docs_fusion(model_fusion, loss_fn, eval_data_cnn, eval_data_sem, labels, data_obj, params):
     steps = int(len(eval_data_cnn) / params['batch_size'])
     if len(eval_data_cnn) % params['batch_size'] != 0:
         steps += 1
@@ -213,68 +217,55 @@ def eval_docs_fusion(model_cnn, model_sem, loss_fn, eval_data_cnn, eval_data_sem
     best_score = 0
     w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     loss = 0
-    model_cnn.eval()
-    model_sem.eval()
+    model_fusion.eval()
     for step in range(steps):
         end_idx = (step + 1) * params['batch_size']
         if end_idx > len(eval_data_cnn):
             end_idx = len(eval_data_cnn)
         batch_ind = eval_indices[(step * params['batch_size']):end_idx]
-        sentences_cnn, orig_batch_labels = data_obj.get_batch(eval_data_cnn, labels, batch_ind, params['model_type'])
-        sentences_sem, orig_batch_labels = data_obj.get_batch(eval_data_sem, labels, batch_ind, params['model_type'])
+        sentences_cnn, orig_batch_labels = data_obj.get_batch(eval_data_cnn, labels, batch_ind, 'cnn_pos_tag')
+        sentences_sem, orig_batch_labels = data_obj.get_batch(eval_data_sem, labels, batch_ind, 'sem_rel')
         
         batch_padded_cnn, batch_lengths_cnn, original_index = data_obj.pad_to_batch(
-            sentences_cnn, data_obj.word_to_idx, params['model_type'])
+            sentences_cnn, data_obj.word_to_idx, 'cnn_pos_tag')
         batch_padded_sem, batch_lengths_sem, original_index = data_obj.pad_to_batch(
-            sentences_sem, data_obj.word_to_idx, params['model_type'])
+            sentences_sem, data_obj.word_to_idx, 'sem_rel')
         if params['model_type']== 'fusion_sem_syn':
             y_pred = []
-            test_pred_cnn = model_cnn(batch_padded_cnn, batch_lengths_cnn, original_index)
-            coherence_pred_cnn_Tensor = test_pred_cnn
-            test_pred_cnn = test_pred_cnn.tolist()
             
-            test_pred_sent, test_pred_par = model_sem(batch_padded_sem, batch_lengths_sem, original_index)
-            coherence_pred_sem_sentTensor = test_pred_sent
-            test_pred_sent = test_pred_sent.tolist()
-            
-            coherence_pred_sem_parTensor = test_pred_par
-            test_pred_par = test_pred_par.tolist()
-            #gather coherence predictions into one array
-            y_pred.append(test_pred_cnn)
-            y_pred.append(test_pred_sent)
-            y_pred.append(test_pred_par)
-            y_pred = np.array(y_pred)
+            coherence_pred_sent, coherence_pred_par, coherence_pred_CNN = model_fusion(batch_padded_sem, batch_padded_cnn, batch_lengths_sem, batch_lengths_cnn, original_index)
+            y_pred.append(coherence_pred_sent.detach().numpy())
+            y_pred.append(coherence_pred_par.detach().numpy())
+            y_pred.append(coherence_pred_CNN.detach().numpy())
             
             # define weights to consider
             # iterate all possible combinations (cartesian product)
+            y_pred = np.array(y_pred)
             for weights in product(w, repeat=3):
-                # skip if all weights are equal
                 if len(set(weights)) == 1:
                     continue
-                # hack, normalize weight vector
                 weights = normalize(weights)
-                # evaluate weights
-                # weighted sum across ensemble members
                 summed = tensordot(y_pred, weights, axes=((0),(0)))
                 # argmax across classes
                 result = argmax(summed, axis=1)
                 # calculate accuracy
                 score = accuracy_score(orig_batch_labels, result)
-                #score = evaluate_ensemble(members, weights, testX, testy)
                 if score > best_score:
                     best_score = score
                     best_weights = weights
                     best_weights = list(best_weights)
-            
-            coherence_pred_cnn = torch.mul(coherence_pred_cnn_Tensor, best_weights[0])
-            coherence_pred_sent = torch.mul(coherence_pred_sem_sentTensor, best_weights[1])
-            coherence_pred_par = torch.mul(coherence_pred_sem_parTensor, best_weights[2])
-            final_prediction1 = coherence_pred_sent.add(coherence_pred_par)
-            final_pred = final_prediction1.add(coherence_pred_cnn)
+            coherence_pred_sent = torch.mul(coherence_pred_sent, weights[0])
+            coherence_pred_par = torch.mul(coherence_pred_par, weights[1])
+            coherence_pred_CNN = torch.mul(coherence_pred_CNN, weights[2])
+            final_pred = coherence_pred_sent.add(coherence_pred_par.add(coherence_pred_CNN))
+            # final_pred = model_fusion(batch_padded_sem, batch_padded_cnn, batch_lengths_sem, batch_lengths_cnn, original_index, weights=best_weights)
+            loss_fn = torch.nn.CrossEntropyLoss()
             eval_labels.extend(orig_batch_labels)
-            
-            loss += loss_fn(final_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
+            loss += loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
             eval_pred.extend(list(np.argmax(final_pred.cpu().data.numpy(), axis=1)))
+
+            # loss += loss_fn(final_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
+            # eval_pred.extend(list(np.argmax(final_pred.cpu().data.numpy(), axis=1)))
              
     if params['task'] == 'score_pred':
         mse = np.square(np.subtract(np.array(eval_pred), np.expand_dims(np.array(eval_labels), 1))).mean()
