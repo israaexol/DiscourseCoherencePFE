@@ -16,7 +16,7 @@ class CNNPosTag(nn.Module):
     def __init__(self, params, data_obj):
         super(CNNPosTag, self).__init__()
         self.params = params
-        sys.stdout = open('CNNN.txt', 'w')
+        sys.stdout = open('CNN-Yahoo.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']
