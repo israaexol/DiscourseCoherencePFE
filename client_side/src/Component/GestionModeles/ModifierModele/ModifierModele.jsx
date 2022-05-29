@@ -170,7 +170,7 @@ const ModifierModele = (props) => {
                 aria-describedby="alert-dialog-description"
             >
             <Typography style={{fontFamily:'Poppins', fontSize:'18px', padding:'14px 20px', boxShadow:'none'}}>
-                    Voulez-vous vraiment annuler la modification du véhicule? 
+                    Voulez-vous vraiment annuler la modification du modèle? 
                     <br></br>
                     Toutes les informations saisies seront perdues.
             </Typography>                    
