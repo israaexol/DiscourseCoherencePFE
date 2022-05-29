@@ -149,7 +149,8 @@ def train(params, training_docs, test_docs, data, model):
             if params['model_type']== 'sem_rel' or params['model_type']== 'cnn_pos_tag':
                 test_accuracy, test_loss = eval_docs(model, loss_fn, test_data, test_labels, data, params)                                
             elif params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq':
-                test_accuracy, test_loss, global_eval_pred, global_avg_deg_test = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
+                test_accuracy, test_loss, global_eval_pred = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
+                #test_accuracy, test_loss, global_eval_pred, #global_avg_deg_test = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
 
             print("Test loss: %0.3f" % test_loss)
             if params['task'] == 'score_pred':
@@ -285,7 +286,8 @@ def train_cv(params, data_docs, data, model):
                     
                 else: 
                     if params['model_type']=='sent_avg' or params['model_type']=='par_seq':
-                        pred_coherence, avg_deg = model(batch_padded, batch_lengths, original_index)
+                        pred_coherence = model(batch_padded, batch_lengths, original_index)
+                        #pred_coherence, avg_deg = model(batch_padded, batch_lengths, original_index)
                     else:
                         pred_coherence = model(batch_padded, batch_lengths, original_index)
                     if params['task'] == 'score_pred':
@@ -304,7 +306,8 @@ def train_cv(params, data_docs, data, model):
                 if params['model_type']== 'sem_rel' or params['model_type'] == 'cnn_pos_tag':
                     test_accuracy, test_loss = eval_docs(model, loss_fn, test_data, test_labels, data, params)                                
                 else:
-                    test_accuracy, test_loss, global_eval_pred, global_avg_deg_test = eval_docs(model, loss_fn, test_data, test_labels, data, params)                
+                    test_accuracy, test_loss, global_eval_pred = eval_docs(model, loss_fn, test_data, test_labels, data, params)     
+                    #test_accuracy, test_loss, global_eval_pred, global_avg_deg_test = eval_docs(model, loss_fn, test_data, test_labels, data, params)           
                 print("Fold" + str(fold) +" - Test loss: %0.3f" % test_loss)
                 if params['task'] == 'score_pred':
                     print("Test correlation: %0.5f" % (test_accuracy))

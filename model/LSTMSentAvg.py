@@ -109,4 +109,4 @@ class LSTMSentAvg(nn.Module):
 
         if self.task != 'score_pred':
             coherence_pred = F.softmax(coherence_pred, dim=dim) #prédiction
-        return coherence_pred, global_avg_deg
+        return coherence_pred #global_avg_deg
