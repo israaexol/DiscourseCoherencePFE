@@ -14,28 +14,34 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { Typography } from '@mui/material';
 import axios from 'axios'
 import Link from '@mui/material/Link';
+import { styled } from '@mui/material/styles';
+
 
 export const AjouterModele = ({handleCloseAjout}) => {
 
     const [state, setState] = useState({
         id: 55,
         name: '',
+        niveaupreprocess : '',
         description: '',
         accuracy: '',
         precision: '',
-        // rappel: '',
+        rappel: '',
         F1_score: '',
         visibility: true
     });
 
+    const hiddenFileInput = React.useRef(null); 
     const [errors, setErrors] = useState({})
     const [slide, setSlide] = useState(null)
     const [slideErr, setSlideErr] = useState(null)
     const [annuler, setAnnuler] = useState(null)
     const [modele, setModele] = useState(null)
     const [success, setSuccess] = useState(false)
-    const { name, description, accuracy, precision, F1_score } = state;
-    const values = { name, description, accuracy, precision, F1_score };
+    const [data, setData] = useState(null)
+    const [fileName, setFileName] = useState(null)
+    const { name, niveaupreprocess, description, accuracy, precision, F1_score } = state;
+    const values = { name, niveaupreprocess, description, accuracy, precision, F1_score };
 
     // handle fields change
     const handleChange = input => e => {
@@ -54,14 +60,16 @@ export const AjouterModele = ({handleCloseAjout}) => {
         let temp = { ...errors }
         if ('name' in fieldValues)
             temp.name = fieldValues.name ? "" : "Ce champs est requis."
+        if ('niveaupreprocess' in fieldValues)
+            temp.niveaupreprocess = fieldValues.niveaupreprocess ? "" : "Ce champs est requis."
         if ('description' in fieldValues)
             temp.description = fieldValues.description ? "" : "Ce champs est requis."
         if ('accuracy' in fieldValues)
             temp.accuracy = fieldValues.accuracy ? "" : "Ce champs est requis."
         if ('precision' in fieldValues)
             temp.precision = fieldValues.precision ? "" : "Ce champs est requis."
-        // if ('rappel' in fieldValues)
-        //     temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
+        if ('rappel' in fieldValues)
+            temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
         if ('F1_score' in fieldValues)
             temp.F1_score = fieldValues.F1_score ? "" : "Ce champs est requis."
         setErrors({
@@ -128,11 +136,31 @@ export const AjouterModele = ({handleCloseAjout}) => {
         </div>
     )
 
+    const Input = styled('input')({
+        display: 'none',
+      });
+
+    const handleImport = event => {
+        hiddenFileInput.current.click();
+
+    };
+
+    const handleFileChange = event => {
+        const fileUploaded = event.target.files[0];
+        if (fileUploaded) {
+            let dataFile = new FormData();
+            dataFile.append('file', fileUploaded);
+            setData(dataFile)
+            setFileName(fileUploaded.name)
+        }
+    };
+
     const addModele = useCallback(
         async () => {
             await axios.post('http://localhost:8080/add_model', {
                 "id": 55,
                 "name" : name,
+                "niveaupreprocess" : niveaupreprocess,
                 "description" : description,
                 "F1_score": F1_score,
                 "precision" : precision,
@@ -189,6 +217,23 @@ export const AjouterModele = ({handleCloseAjout}) => {
                         <div style={{padding:"5px 40px"}}>
                             <TextField
                                 required
+                                error={errors.niveaupreprocess === "" ? false : ""}
+                                id="niveaupreprocess"
+                                label="Niveau de prétraitement"
+                                InputLabelProps={{
+                                    shrink: true,
+                                }}
+                                variant="outlined"
+                                fullWidth='true'
+                                onChange={handleChange('niveaupreprocess')}
+                                value={values.niveaupreprocess}
+                                type='string'
+                            />
+                        </div>
+                        <br></br>
+                        <div style={{padding:"5px 40px"}}>
+                            <TextField
+                                required
                                 error={errors.description === "" ? false : ""}
                                 id="description"
                                 label="Description"
@@ -236,8 +281,8 @@ export const AjouterModele = ({handleCloseAjout}) => {
                                 type='string'
                             />
                         </div>
-                        {/* <br></br> */}
-                        {/* <div style={{padding:"5px 40px"}}>
+                        <br></br> 
+                        <div style={{padding:"5px 40px"}}>
                             <TextField
                                 required
                                 error={errors.rappel === "" ? false : ""}
@@ -251,7 +296,7 @@ export const AjouterModele = ({handleCloseAjout}) => {
                                 onChange={handleChange('rappel')}
                                 defaultValue={values.rappel}
                             />
-                        </div> */}
+                        </div>
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
                             <TextField
@@ -268,6 +313,15 @@ export const AjouterModele = ({handleCloseAjout}) => {
                                 defaultValue={values.F1_score}
                                 type='string'
                             />
+                        </div>
+                        <br></br>
+                        <div className="flex-container" style={{display: "flex", flexWrap:'wrap', gap:'30px', justifyContent:'center', alignItems:'center'}}>
+                            <div>
+                                <Input ref={hiddenFileInput} onChange={handleFileChange} id="pickle-file" type="file" />
+                                <Button onClick={handleImport} style={{backgroundColor:"#007bff", textTransform:"capitalize", color:"white", fontWeight:'bold'}} variant="contained">
+                                {fileName ?? "Importer un modèle"}
+                                </Button>
+                            </div>
                         </div>
                         {message}
                         {successMessage}

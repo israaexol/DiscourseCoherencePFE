@@ -1,4 +1,4 @@
-import * as React from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -24,44 +24,70 @@ import {
 
 import github from '../../assets/github.png'
 
-const Item = styled(Paper)(({ theme }) => ({
-...theme.typography.body1,
-padding: theme.spacing(2),
-textAlign: 'center',
-color: theme.palette.text.black,
-width: 100,
-}));
+const Sidebar = ({selectedIndex, descriptionList}) => {
 
-function ModelDescription({niveau}) {
-    switch (niveau) {
-      case 0:
-        return <DescriptionSentAvg/>;
-      case 1:
-        return <DescriptionParSeq/>;
-      case 2:
-        return <DescriptionSemRel/>;
-      case 3:
-        return <DescriptionCNNPosTag/>
-      default:
-        return null;
+  const Item = styled(Paper)(({ theme }) => ({
+    ...theme.typography.body1,
+    padding: theme.spacing(2),
+    textAlign: 'center',
+    color: theme.palette.text.black,
+    width: 100,
+    }));
+    
+    const [description, setDescriptionList] = useState(null)
+    
+    const getDescription = () => {
+      setDescriptionList(descriptionList)
+      console.log(description)
+      console.log(selectedIndex)
     }
+
+    useEffect(() => {
+    getDescription();
+    }, [descriptionList, selectedIndex]);
+
+    function ModelDescription() {
+      return (
+      <div>
+        <Typography variant="body2" sx={{ fontFamily: 'Poppins', fontWeight: 300 }}>
+            {/* <b>PARSEQ</b> est un modèle neuronal à base de <b>LSTM</b> (Long Short Term Memory)
+                qui évalue la cohérence d'un discours à travers les similarités
+                cosines entre <b>ses paragraphes</b> (i.e à un niveau plus global),
+                en modélisant ainsi la parenté sémantique entre elles */}
+            {descriptionList[selectedIndex]}
+        </Typography>
+        <br/>
+        <Typography variant="body2" sx={{ fontFamily: 'Poppins', fontWeight: 700, color: '#079615' }}>
+            Niveau d'analyse : Sémantique
+        </Typography>
+      </div>)
+      // case 0:
+      //   return <DescriptionSentAvg/>;
+      // case 1:
+      //   return <DescriptionParSeq/>;
+      // case 2:
+      //   return <DescriptionSemRel/>;
+      // case 3:
+      //   return <DescriptionCNNPosTag/>
+    //   default:
+    //     return null;
+    // }
   }
 
-const Sidebar = ({selectedIndex}) => {
   return (
       <div id="header">
         <ProSidebar>
             <SidebarContent>
-            { {selectedIndex} ?
                 <Card sx={{ width: 350, marginTop: '5%', marginLeft: '7%' }}>
                     <CardContent>
                         <Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic' }} color="#5885FB" gutterBottom>
                         Description du modèle
                         </Typography>
-                        <ModelDescription niveau={selectedIndex}/>
+                        <ModelDescription/>
+                        {/* <ModelDescription/> */}
                     </CardContent>
-                </Card> : <></>
-            }
+                </Card>
+
                 <Card sx={{ width: 350, marginTop: '5%', marginLeft: '7%' }}>
                     <CardContent>
                         <Typography sx={{ fontSize: 18, fontWeight: 'bold', fontFamily: 'Didact Gothic' }} color="#5885FB" gutterBottom>
