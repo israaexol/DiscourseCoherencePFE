@@ -21,6 +21,7 @@ class Model(BaseModel):
     rappel : str # new
     file_name : str # new
     preprocess :str # new
+    hybridation : bool # new
     visibility : bool
 
     class Config:
