@@ -19,4 +19,8 @@ class Model(Base):
     F1_score = Column(String(255))
     precision = Column(String(255))
     accuracy = Column(String(255))
+    rappel = Column(String(255)) # new
+    file_name = Column(String(255)) # new
+    preprocess = Column(String(255)) # new
+    hybridation = Column(Boolean, server_default='True',nullable = False) #new
     visibility = Column(Boolean, server_default='True',nullable = False)

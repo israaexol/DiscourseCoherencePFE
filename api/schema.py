@@ -18,6 +18,10 @@ class Model(BaseModel):
     F1_score : str
     precision : str
     accuracy : str
+    rappel : str # new
+    file_name : str # new
+    preprocess :str # new
+    hybridation : bool # new
     visibility : bool
 
     class Config:

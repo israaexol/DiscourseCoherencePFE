@@ -89,8 +89,9 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
             loss += loss_fn(batch_pred, Variable(LongTensor(orig_batch_labels))).cpu().data.numpy()
             eval_pred.extend(list(np.argmax(batch_pred.cpu().data.numpy(), axis=1)))      
         elif params['model_type']=='sent_avg' or params['model_type']=='par_seq':
-            batch_pred, avg_deg_test = model(batch_padded, batch_lengths, original_index)
-            global_avg_deg_test += avg_deg_test
+            batch_pred = model(batch_padded, batch_lengths, original_index)
+            #batch_pred, avg_deg_test = model(batch_padded, batch_lengths, original_index)
+            #global_avg_deg_test += avg_deg_test
             eval_labels.extend(orig_batch_labels)
             if params['task'] == 'score_pred':
                 loss += loss_fn(batch_pred, Variable(FloatTensor(orig_batch_labels))).cpu().data.numpy()

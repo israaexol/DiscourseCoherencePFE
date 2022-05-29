@@ -1,16 +1,15 @@
 from asyncio.log import logger
 from lib2to3.pgen2 import token
+from xmlrpc.client import Boolean
+from sqlalchemy import false, true
 import uvicorn
 import pickle
 import random
+import shutil
 import numpy
 from pydantic import BaseModel
 from fastapi import FastAPI, UploadFile, File, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from LSTMSentAvg import LSTMSentAvg
-from LSTMParSeq import LSTMParSeq
-from LSTMSemRel import LSTMSemRel
-from CNNPosTag import CNNPosTag
 from DocumentWithParagraphs import DocumentWithParagraphs
 from evaluation import eval_docs
 from train_neural_models import train
@@ -215,36 +214,6 @@ def preprocess_data_parseq(text):
     return batch_padded, batch_lengths, original_index
 
 
-def preprocess_data_semrel(text):
-    # read data class
-    documents = []
-    add_new_words = True
-    text = text.lower()
-    text_id = random.randint(0, 1000)
-    label = None
-    doc = DocumentWithParagraphs(text, label, id=text_id)
-    doc_indexed = []
-    for para in doc.text:
-        para_indexed = []
-        for sent in para:
-            sent_indexed = []
-            for word in sent:
-                sent_indexed.append(
-                    dataObj.add_token_to_index(word, add_new_words))
-            para_indexed.append(sent_indexed)
-        doc_indexed.append(para_indexed)
-    doc.text_indexed = doc_indexed
-    documents.append(doc)
-    documents_data, documents_labels, documents_ids = dataObj.create_doc_sents(
-        documents, 'paragraph', 'class')
-    indices = [int('0')]
-    sentences, orig_batch_labels = dataObj.get_batch(
-        documents_data, documents_labels, indices, 'sem_rel')
-    batch_padded, batch_lengths, original_index = dataObj.pad_to_batch(
-        sentences, dataObj.word_to_idx, 'sem_rel')
-    return batch_padded, batch_lengths, original_index
-
-
 def preprocess_data_cnnpostag(text):
     # read data class
     documents = []
@@ -274,6 +243,8 @@ def preprocess_data_cnnpostag(text):
     batch_padded, batch_lengths, original_index = dataObj.pad_to_batch(
         sentences, dataObj.word_to_idx, 'cnn_pos_tag')
     return batch_padded, batch_lengths, original_index
+
+
 # Setting up the home route
 
 
@@ -282,141 +253,122 @@ def read_root():
     return {"data": "Welcome to La Coherencia"}
 
 
+# Uploader le pickle file d'un nouveau modèle
+@app.post('/addpickle_model')
+async def pickle(pickle: UploadFile = File(...)):
+    with open("pickle_files/"+pickle.filename, "wb") as buffer:
+        shutil.copyfileobj(pickle.file, buffer)
+    return {"filename": pickle.filename}
+
+
 @app.post("/evaluate")
-async def get_predict(data: Inputs):
-    niveau = data.selectedIndex
+async def get_predict(data: Inputs, db: Session = Depends(get_db)):
+    model_id = data.selectedIndex
     sample = data.text
 
-    if niveau == 0:
-        #model = LSTMSentAvg(params, data_obj=dataObj)
-        #model = model.load_state_dict(torch.load('../model/runs/sentavg_model/sentavg_model_best'))
-        #model = pickle.load(open('../model/sent_avg.pkl', 'rb'))
-        model = torch.load(
-            '../model/runs/sent_avg_model/sent_avg_model_best.pt')
-        model.eval()
+    model_db = get_one_model(model_id, db)
+    file_name = model_db.file_name
+    process_level = model_db.preprocess
+    model = torch.load(
+        './pickle_files/'+file_name)
+    model.eval()
+    grid_search = False
+    if process_level == "sémantique phrases":  # sentavg + Bert
         batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
             sample)
-        print('===================batch_padded===================')
-        print(batch_padded)
-        pred, avg_deg = model.forward(
-            batch_padded, batch_lengths, original_index, dim=1)
-        print('====================pred=========================')
-        print(pred)
-        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-
-    elif niveau == 1:
-        model = torch.load('../model/runs/par_seq_model/par_seq_model_best.pt')
-        model.eval()
+    elif process_level == "sémantique paragraphes":  # parseq + semrel
         batch_padded, batch_lengths, original_index = preprocess_data_parseq(
             sample)
-        pred, avg_deg = model.forward(
-            batch_padded, batch_lengths, original_index, dim=1)
-        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-    elif niveau == 2:
-        model = torch.load('../model/runs/semrel_model/semrel_model_best.pt')
-        model.eval()
-        batch_padded, batch_lengths, original_index = preprocess_data_semrel(
-            sample)
-        pred = model.forward(batch_padded, batch_lengths,
-                             original_index, weights=best_weights, dim=1)
-        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-    elif niveau == 3:
-        model = torch.load(
-            '../model/runs/cnn_postag_model/cnn_postag_model_best.pt')
-        model.eval()
+        if file_name == "semrel":
+            grid_search = True
+
+    elif process_level == "syntaxique":  # cnnpostag
         batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
             sample)
-        pred = model.forward(batch_padded, batch_lengths,
-                             original_index, dim=1)
-        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-    else:
-        model = pickle.load(open('../model/sem_syn_cv.pkl', 'rb'))
+    else:  # fusionsemsyn
+        batch_padded_postag, batch_lengths_postag, original_index_postag = preprocess_data_cnnpostag(
+            sample)
+        batch_padded_sem, batch_lengths_sem, original_index_sem = preprocess_data_parseq(
+            sample)
+        grid_search = True
 
+    if grid_search == True:  # semrel + fusion_semsyn
+        pred = model.forward(batch_padded, batch_lengths,
+                             original_index, weights=best_weights, dim=1)
+    else:
+        pred = model.forward(  # sentavg + parseq + cnnpostag
+            batch_padded, batch_lengths, original_index, dim=1)
+
+    argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+    score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     return {
         "data": {
             'score': score
-            # 'interpretation': 'Candidate can be hired.' if label == 1 else 'Candidate can not be hired.'
         }
     }
 
 
 @app.post("/uploadfile")
-async def get_predict_file(niveau: int, file: UploadFile = File(...)):
+async def get_predict_file(model_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
     content_assignment = await file.read()
     data = convert_csv(content_assignment)
-    print("============data==============")
-    print(data)
+
     scores = []
     text_ids = []
     texts = []
     original_scores = []
+
+    model_db = get_one_model(model_id, db)
+    file_name = model_db.file_name
+    process_level = model_db.preprocess
+
+    model = torch.load(
+        './pickle_files/'+file_name+'.pt')
+    model.eval()
+    grid_search = False
     for i in range(len(data)):
         sample = data[i]['text']
         text_ids.append(data[i]['text_id'])
         texts.append(data[i]['text'])
         original_scores.append(data[i]['labelA'])
-        if niveau == 0:
-            model = torch.load('../model/runs/sentavg_model_cv/sentavg_model_cv_best.pt')
-            model.eval()
+        if process_level == "sémantique phrases":  # sentavg + Bert
             batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
                 sample)
-            # print('===================batch_padded===================')
-            # print(batch_padded)
-            pred, avg_deg = model.forward(
-                batch_padded, batch_lengths, original_index, dim=1)
-            # print('====================pred=========================')
-            # print(pred)
-            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-            scores.append(score)
-
-        elif niveau == 1:
-            model = torch.load('../model/runs/parseq_model_cv/parseq_model_cv_best.pt')
-            model.eval()
+        elif process_level == "sémantique paragraphes":  # parseq + semrel
             batch_padded, batch_lengths, original_index = preprocess_data_parseq(
                 sample)
-            pred, avg_deg = model.forward(
-                batch_padded, batch_lengths, original_index, dim=1)
-            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-            scores.append(score)
-        elif niveau == 2:
-            model = torch.load(
-                '../model/runs/semrel_model/semrel_model_best.pt')
-            model.eval()
-            batch_padded, batch_lengths, original_index = preprocess_data_semrel(
-                sample)
-            pred = model.forward(batch_padded, batch_lengths,
-                                 original_index, weights=best_weights, dim=1)
-            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-            scores.append(score)
-        elif niveau == 3:
-            model = torch.load(
-                '../model/runs/cnn_postag_model/cnn_postag_model_best.pt')
-            model.eval()
+            if file_name == "semrel":
+                grid_search = True
+
+        elif process_level == "syntaxique":  # cnnpostag
             batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
                 sample)
-            pred = model.forward(
-                batch_padded, batch_lengths, original_index, dim=1)
-            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-            scores.append(score)
-        else:
-            model = pickle.load(open('../model/sem_syn_cv.pkl', 'rb'))
+        else:  # fusionsemsyn
+            batch_padded_postag, batch_lengths_postag, original_index_postag = preprocess_data_cnnpostag(
+                sample)
+            batch_padded_sem, batch_lengths_sem, original_index_sem = preprocess_data_parseq(
+                sample)
+            grid_search = True
 
-    print(scores)
+        if grid_search == True:  # semrel + fusion_semsyn
+            pred = model.forward(batch_padded, batch_lengths,
+                                 original_index, weights=best_weights, dim=1)
+        else:
+            pred = model.forward(  # sentavg + parseq + cnnpostag
+                batch_padded, batch_lengths, original_index, dim=1)
+
+        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+        scores.append(score)
     return {"data":  {"scores": scores, "text_ids": text_ids, "texts": texts, "original_scores": original_scores}}
+
 
 # Retourner les liste de tous les modèles avec les détails pour l'interface admin
 
 
 @app.get('/models/', response_model=List[SchemaModel], status_code=200)
-def get_all_models(db: Session = Depends(get_db)): #token: str = Depends(oauth2_scheme)
+# token: str = Depends(oauth2_scheme)
+def get_all_models(db: Session = Depends(get_db)):
     list_models = db.query(ModelModel).all()
     return list_models
 
@@ -428,7 +380,7 @@ def get_one_model(model_id: int, db: Session = Depends(get_db)):
     db_model = db.query(ModelModel).filter(
         ModelModel.id == model_id).first()
     if db_model is None:
-        raise HTTPException(status_code=404, detail="Model non existant")
+        raise HTTPException(status_code=404, detail="Modéle non existant")
     return db_model
 
 # Retourner la description d'un modèle précis pour sidebar
@@ -439,7 +391,7 @@ def get_one_model(model_id: int, db: Session = Depends(get_db)):
     db_model = db.query(ModelModel.description).filter(
         ModelModel.id == model_id and ModelModel.visibility == True).first()
     if db_model is None:
-        raise HTTPException(status_code=404, detail="Model non existant")
+        raise HTTPException(status_code=404, detail="Modéle non existant")
     return db_model
 
 # Retourner les noms des modèles à afficher dans la liste déroulante des modèles existants
@@ -457,14 +409,15 @@ def get_models_name(db: Session = Depends(get_db)):
 
 
 @app.post('/add_model', response_model=SchemaModel)
-def add_model(model: SchemaModel, db: Session = Depends(get_db)): #token: str = Depends(oauth2_scheme)
+# token: str = Depends(oauth2_scheme)
+def add_model(model: SchemaModel, db: Session = Depends(get_db)):
     db_model_name = db.query(ModelModel).filter(
         ModelModel.name == model.name).first()
     if db_model_name:
         raise HTTPException(status_code=400, detail="Modèle déjà existant")
     else:
         db_model = ModelModel(name=model.name, description=model.description,
-                              F1_score=model.F1_score, precision=model.precision, accuracy=model.accuracy)
+                              F1_score=model.F1_score, precision=model.precision, accuracy=model.accuracy,  rappel=model.rappel, file_name=model.file_name, preprocess=model.preprocess, hybridation=model.hybridation)
         db.add(db_model)
         db.commit()
         return db_model
@@ -472,7 +425,8 @@ def add_model(model: SchemaModel, db: Session = Depends(get_db)): #token: str = 
 
 
 @app.put("/update_model/{model_id}", response_model=SchemaModel)
-def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db)): #token: str = Depends(oauth2_scheme)
+# token: str = Depends(oauth2_scheme)
+def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db)):
     model_to_update = db.query(ModelModel).filter(
         ModelModel.id == model_id).first()
     if model.name:
@@ -485,6 +439,12 @@ def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db
         model_to_update.precision = model.precision
     if model.accuracy:
         model_to_update.accuracy = model.accuracy
+    if model.rappel: 
+        model_to_update.rappel = model.rappel
+    if model.preprocess : 
+        model_to_update.preprocess = model.preprocess
+    if model.hybridation : 
+        model_to_update = model.hybridation
     db.commit()
     return model_to_update
 
@@ -492,7 +452,8 @@ def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db
 
 
 @app.put("/update_model_visibility/{model_id}", response_model=SchemaModel)
-def update_model_vis(model_id: int, visib: bool, db: Session = Depends(get_db)): #token: str = Depends(oauth2_scheme)
+# token: str = Depends(oauth2_scheme)
+def update_model_vis(model_id: int, visib: bool, db: Session = Depends(get_db)):
     model_to_update = db.query(ModelModel).filter(
         ModelModel.id == model_id).first()
     model_to_update.visibility = visib

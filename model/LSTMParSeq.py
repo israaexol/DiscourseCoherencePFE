@@ -115,4 +115,4 @@ class LSTMParSeq(nn.Module):
         coherence_pred = self.predict_layer(global_vectors)
         if self.task != 'score_pred':
             coherence_pred = F.softmax(coherence_pred, dim=0) # classification des documents
-        return coherence_pred, global_avg_deg_doc
+        return coherence_pred #, global_avg_deg_doc
