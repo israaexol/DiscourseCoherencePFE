@@ -6,6 +6,7 @@ from LSTMSentAvg import LSTMSentAvg
 from LSTMParSeq import LSTMParSeq
 from LSTMSemRel import LSTMSemRel
 from CNNPosTag import CNNPosTag
+from FusionSemSyn import FusionSemSyn
 from train_neural_models import *
 import pickle
 
@@ -140,9 +141,8 @@ if params['vector_type'] == 'none':  # init random vectors
 if params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'fusion_sem_syn' and params['pos_tag'] == 1 :
     data_docs_cnn = data.read_data_class_cv_tag(params)
     data_docs_sem = data.read_data_class_cv(params)
-    model_cnn = CNNPosTag(params, data)
-    model_sem = LSTMSemRel(params, data)
-    train_fusion(params, data_docs_cnn, data_docs_sem, data, model_cnn, model_sem)
+    model_fusion = FusionSemSyn(params, data_cnn=data_docs_cnn, data_semrel=data_docs_sem, data_obj=data)
+    train_fusion(params, data_docs_cnn, data_docs_sem, data, model_fusion)
 
 # Modèle de classification du niveau syntaxique avec la validation croisée
 elif params['cross_val'] == 1 and params['task'] == 'class' and params['model_type'] == 'cnn_pos_tag' and params['pos_tag'] == 1 :

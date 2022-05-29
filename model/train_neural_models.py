@@ -200,9 +200,17 @@ def train_cv(params, data_docs, data, model):
     best_test_acc = 0
     best_weights = None
     best_score = 0
+    global_accuracy_scores = []
+    global_precision_scores = []
+    global_recall_scores = []
+    global_scoref1_scores = []
     w = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     kfold = StratifiedKFold(n_splits = 10, shuffle = False) 
     for epoch in range(params['num_epochs']):
+        accuracy_scores = []
+        precision_scores = []
+        recall_scores = []
+        scoreF1_scores = []
         fold = 0
         if params['lr_decay'] == 'lambda' or params['lr_decay'] == 'step':
             scheduler.step()
@@ -381,8 +389,8 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_fusion):
             for step in bar(range(steps)):
 
                 batch_ind = indices[(step * params["batch_size"]):((step + 1) * params["batch_size"])]
-                sentences_cnn, orig_batch_labels = data.get_batch(training_data_cnn, training_labels_cnn, batch_ind, params['model_type'])
-                sentences_sem, orig_batch_labels = data.get_batch(training_data_sem, training_labels_cnn, batch_ind, params['model_type'])
+                sentences_cnn, orig_batch_labels = data.get_batch(training_data_cnn, training_labels_cnn, batch_ind, 'cnn_pos_tag')
+                sentences_sem, orig_batch_labels = data.get_batch(training_data_sem, training_labels_cnn, batch_ind, 'sem_rel')
 
                 batch_padded_cnn, batch_lengths_cnn, original_index = data.pad_to_batch(sentences_cnn, data.word_to_idx, 'cnn_pos_tag')
                 batch_padded_sem, batch_lengths_sem, original_index = data.pad_to_batch(sentences_sem, data.word_to_idx, 'sem_rel')
@@ -393,11 +401,11 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_fusion):
                 model_fusion.zero_grad()
                 if params['model_type'] == 'fusion_sem_syn':
                     y_pred = []
-                    coherence_pred_sent, coherence_pred_par, coherence_pred_cnn = model_fusion(batch_padded_sem, batch_padded_cnn, batch_lengths_sem, batch_lengths_cnn, original_index)
+                    coherence_pred_sent, coherence_pred_par, coherence_pred_CNN = model_fusion(batch_padded_sem, batch_padded_cnn, batch_lengths_sem, batch_lengths_cnn, original_index)
                     #gather coherence predictions into one array
                     y_pred.append(coherence_pred_sent.detach().numpy())
                     y_pred.append(coherence_pred_par.detach().numpy())
-                    y_pred.append(coherence_pred_cnn.detach().numpy())
+                    y_pred.append(coherence_pred_CNN.detach().numpy())
                     
                     y_pred = np.array(y_pred)
                     for weights in product(w, repeat=3):
@@ -414,7 +422,19 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_fusion):
                             best_weights = weights
                             best_weights = list(best_weights)
                     
-                    final_pred = model_fusion(batch_padded_sem, batch_padded_cnn, batch_lengths_sem, batch_lengths_cnn, original_index, weights=best_weights)
+                    # coherence_pred_sentTensor = coherence_pred_sent
+                    # coherence_pred_parTensor = coherence_pred_par
+                    # coherence_pred_CNNTensor = coherence_pred_CNN
+                    
+                    # coherence_pred_sent = coherence_pred_sent.tolist()
+                    # coherence_pred_par = coherence_pred_par.tolist()
+                    # coherence_pred_CNN = coherence_pred_CNN.tolist()
+                    
+                    coherence_pred_sent = torch.mul(coherence_pred_sent, weights[0])
+                    coherence_pred_par = torch.mul(coherence_pred_par, weights[1])
+                    coherence_pred_CNN = torch.mul(coherence_pred_CNN, weights[2])
+                    final_pred = coherence_pred_sent.add(coherence_pred_par.add(coherence_pred_CNN))
+                    # final_pred = model_fusion(batch_padded_sem, batch_padded_cnn, batch_lengths_sem, batch_lengths_cnn, original_index, weights=best_weights)
                     pickle.dump(best_weights, open('best_weights_fusion.pkl', 'wb'))
                     loss_fn = torch.nn.CrossEntropyLoss()
                     loss = loss_fn(final_pred, Variable(LongTensor(orig_batch_labels)))
