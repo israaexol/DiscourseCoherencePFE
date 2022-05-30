@@ -167,7 +167,7 @@ const Accueil = () => {
 
     setOpen(false);
   };
-
+  
   function RenderResult({ isLoading }) {
     if (isLoading === null) {
       return <Result hidden={true} />

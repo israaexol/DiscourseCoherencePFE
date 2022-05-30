@@ -15,8 +15,27 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 
 const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, table }) => {
+  const [displayTable , setDisplay] = React.useState(false);
+  const [buttonTexte , setButtonTexte] = React.useState("Afficher Plus");
+  const [icon, setIcon] = React.useState(<AddCircleOutlineIcon/>)
+  const handleDisplayTable = (e) => {
+    e.preventDefault();
+    if(!displayTable){
+      setDisplay(true)
+      setButtonTexte("Réduire le tableau")
+      setIcon(<RemoveCircleOutlineIcon/>)
+    }
+    else{
+      setDisplay(false)
+      setButtonTexte("Afficher Plus")
+      setIcon(<AddCircleOutlineIcon/>)
+    }
+    
+  };
 
   function Score({ scoreResult }) {
     switch (scoreResult) {
@@ -102,7 +121,8 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
               </div>
             </div>
           </div>
-          <RenderTable rows={table}></RenderTable>
+          <Button variant="outlined"  endIcon={icon}  onClick={handleDisplayTable}>{buttonTexte}</Button>
+          <RenderTable rows={table} displayTable = {displayTable}></RenderTable>
 
         </>
 
@@ -164,16 +184,19 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
     },
   }));
 
-  function RenderTable({ rows }) {
+  function RenderTable({ rows, displayTable }) {
+    if (displayTable ==false){
+      return
+    }else{
     return (
       <div>
-        <Table sx={{ minWidth: 70, maxWidth: 1000 }} aria-label="customized table">
+        <Table sx={{ minWidth: 70, maxWidth: 1000 , height: "200px", overflow:"scroll"}} aria-label="customized table">
           <TableHead>
             <TableRow>
-              <StyledTableCell >ID du document</StyledTableCell>
-              <StyledTableCell align="center">Texte</StyledTableCell>
-              <StyledTableCell align="left">Score original</StyledTableCell>
-              <StyledTableCell align="left">Score prédit</StyledTableCell>
+              <StyledTableCell sx={{fontFamily : 'Didact Gothic'}} >ID du document</StyledTableCell>
+              <StyledTableCell align="center" sx={{fontFamily : 'Didact Gothic'}}>Texte</StyledTableCell>
+              <StyledTableCell align="left" sx={{fontFamily : 'Didact Gothic'}}>Score original</StyledTableCell>
+              <StyledTableCell align="left" sx={{fontFamily : 'Didact Gothic'}}>Score prédit</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -182,9 +205,9 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
                 <StyledTableCell component="th" scope="row">
                   {row.text_id}
                 </StyledTableCell>
-                <StyledTableCell align="left">{row.text}</StyledTableCell>
-                <StyledTableCell align="left">{row.original_score}</StyledTableCell>
-                <StyledTableCell align="left" sx={{ fontWeight: "bold" }}>{row.predicted_score}</StyledTableCell>
+                <StyledTableCell align="justify" sx={{width: "400px", height : "200px", fontFamily : 'Didact Gothic'}}><div style={{width: "400px", height: "200px" , overflow: "auto"}}>{row.text}</div></StyledTableCell>
+                <StyledTableCell align="center" sx={{fontFamily : 'Didact Gothic'}}>{row.original_score}</StyledTableCell>
+                <StyledTableCell align="center" sx={{ fontWeight: "bold" , fontFamily : 'Didact Gothic'}}>{row.predicted_score}</StyledTableCell>
               </StyledTableRow>
             ))}
           </TableBody>
@@ -192,6 +215,8 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
       </div>
 
     );
+            }
+
   }
   return (
     <div id='evalSection' hidden={hidden}>
