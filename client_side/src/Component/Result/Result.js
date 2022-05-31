@@ -193,10 +193,10 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
         <Table sx={{ minWidth: 70, maxWidth: 1000 , height: "200px", overflow:"scroll"}} aria-label="customized table">
           <TableHead>
             <TableRow>
-              <StyledTableCell sx={{fontFamily : 'Didact Gothic'}} >ID du document</StyledTableCell>
-              <StyledTableCell align="center" sx={{fontFamily : 'Didact Gothic'}}>Texte</StyledTableCell>
-              <StyledTableCell align="left" sx={{fontFamily : 'Didact Gothic'}}>Score original</StyledTableCell>
-              <StyledTableCell align="left" sx={{fontFamily : 'Didact Gothic'}}>Score prédit</StyledTableCell>
+              <StyledTableCell sx={{fontFamily : 'Didact Gothic', fontWeight :"bold"}} >ID du document</StyledTableCell>
+              <StyledTableCell align="center" sx={{fontFamily : 'Didact Gothic', fontWeight :"bold"}}>Texte</StyledTableCell>
+              <StyledTableCell align="left" sx={{fontFamily : 'Didact Gothic', fontWeight :"bold"}}>Score original</StyledTableCell>
+              <StyledTableCell align="left" sx={{fontFamily : 'Didact Gothic', fontWeight :"bold"}}>Score prédit</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
