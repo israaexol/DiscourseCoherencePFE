@@ -262,6 +262,7 @@ def read_root():
 # Uploader le pickle file d'un nouveau modèle
 @app.post('/addpickle_model')
 async def pickle(pickle: UploadFile = File(...)):
+    print("============================HELLLLLLLLLLLLLLLLLLLLLLLLO======================")
     with open("pickle_files/"+pickle.filename, "wb") as buffer:
         shutil.copyfileobj(pickle.file, buffer)
     return {"filename": pickle.filename}
@@ -595,6 +596,7 @@ def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db
         model_to_update.hybridation = model.hybridation
     if model.visibility:
         model_to_update.visibility = model.visibility
+
     db.commit()
     return model_to_update
 

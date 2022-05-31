@@ -1,0 +1,333 @@
+EPOCH 0
+Time 0.08  min
+Train loss: 34.04374957084656
+Accuracy :
+0.385
+Confusion matrix :
+[[30 17 35]
+ [ 9 13 19]
+ [18 25 34]]
+Accuracy low :
+0.605
+Accuracy medium :
+0.65
+Accuracy high :
+0.515
+Average accuracy :
+0.59
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.53      0.37      0.43        82
+           1       0.24      0.32      0.27        41
+           2       0.39      0.44      0.41        77
+
+    accuracy                           0.38       200
+   macro avg       0.38      0.37      0.37       200
+weighted avg       0.41      0.39      0.39       200
+
+Test loss: 7.685
+Test accuracy: 38.50%
+saved model runs\cnn_postag_yahoo/cnn_postag_yahoo_best
+
+==================== BEST TEST ACCURACY =================================
+0.385
+EPOCH 1
+Time 0.66  min
+Train loss: 33.463979601860046
+Accuracy :
+0.385
+Confusion matrix :
+[[30 25 27]
+ [10 19 12]
+ [15 34 28]]
+Accuracy low :
+0.615
+Accuracy medium :
+0.595
+Accuracy high :
+0.56
+Average accuracy :
+0.59
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.55      0.37      0.44        82
+           1       0.24      0.46      0.32        41
+           2       0.42      0.36      0.39        77
+
+    accuracy                           0.38       200
+   macro avg       0.40      0.40      0.38       200
+weighted avg       0.43      0.39      0.39       200
+
+Test loss: 7.709
+Test accuracy: 38.50%
+
+==================== BEST TEST ACCURACY =================================
+0.385
+EPOCH 2
+Time 0.72  min
+Train loss: 32.981449842453
+Accuracy :
+0.4
+Confusion matrix :
+[[32 23 27]
+ [12 17 12]
+ [20 26 31]]
+Accuracy low :
+0.59
+Accuracy medium :
+0.635
+Accuracy high :
+0.575
+Average accuracy :
+0.6
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.50      0.39      0.44        82
+           1       0.26      0.41      0.32        41
+           2       0.44      0.40      0.42        77
+
+    accuracy                           0.40       200
+   macro avg       0.40      0.40      0.39       200
+weighted avg       0.43      0.40      0.41       200
+
+Test loss: 7.703
+Test accuracy: 40.00%
+saved model runs\cnn_postag_yahoo/cnn_postag_yahoo_best
+
+==================== BEST TEST ACCURACY =================================
+0.4
+EPOCH 3
+Time 1.26  min
+Train loss: 32.804789543151855
+Accuracy :
+0.385
+Confusion matrix :
+[[30 26 26]
+ [ 9 19 13]
+ [19 30 28]]
+Accuracy low :
+0.6
+Accuracy medium :
+0.61
+Accuracy high :
+0.56
+Average accuracy :
+0.59
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.52      0.37      0.43        82
+           1       0.25      0.46      0.33        41
+           2       0.42      0.36      0.39        77
+
+    accuracy                           0.38       200
+   macro avg       0.40      0.40      0.38       200
+weighted avg       0.42      0.39      0.39       200
+
+Test loss: 7.676
+Test accuracy: 38.50%
+
+==================== BEST TEST ACCURACY =================================
+0.4
+EPOCH 4
+Time 1.33  min
+Train loss: 32.78449201583862
+Accuracy :
+0.415
+Confusion matrix :
+[[33 22 27]
+ [ 9 18 14]
+ [21 24 32]]
+Accuracy low :
+0.605
+Accuracy medium :
+0.655
+Accuracy high :
+0.57
+Average accuracy :
+0.61
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.52      0.40      0.46        82
+           1       0.28      0.44      0.34        41
+           2       0.44      0.42      0.43        77
+
+    accuracy                           0.41       200
+   macro avg       0.41      0.42      0.41       200
+weighted avg       0.44      0.41      0.42       200
+
+Test loss: 7.703
+Test accuracy: 41.50%
+saved model runs\cnn_postag_yahoo/cnn_postag_yahoo_best
+
+==================== BEST TEST ACCURACY =================================
+0.415
+EPOCH 5
+Time 1.85  min
+Train loss: 32.6570702791214
+Accuracy :
+0.415
+Confusion matrix :
+[[36 16 30]
+ [15 12 14]
+ [21 21 35]]
+Accuracy low :
+0.59
+Accuracy medium :
+0.67
+Accuracy high :
+0.57
+Average accuracy :
+0.61
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.50      0.44      0.47        82
+           1       0.24      0.29      0.27        41
+           2       0.44      0.45      0.45        77
+
+    accuracy                           0.41       200
+   macro avg       0.40      0.40      0.39       200
+weighted avg       0.43      0.41      0.42       200
+
+Test loss: 7.724
+Test accuracy: 41.50%
+
+==================== BEST TEST ACCURACY =================================
+0.415
+EPOCH 6
+Time 1.91  min
+Train loss: 32.60098326206207
+Accuracy :
+0.39
+Confusion matrix :
+[[31 21 30]
+ [11 15 15]
+ [20 25 32]]
+Accuracy low :
+0.59
+Accuracy medium :
+0.64
+Accuracy high :
+0.55
+Average accuracy :
+0.5933333333333334
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.50      0.38      0.43        82
+           1       0.25      0.37      0.29        41
+           2       0.42      0.42      0.42        77
+
+    accuracy                           0.39       200
+   macro avg       0.39      0.39      0.38       200
+weighted avg       0.42      0.39      0.40       200
+
+Test loss: 7.731
+Test accuracy: 39.00%
+
+==================== BEST TEST ACCURACY =================================
+0.415
+EPOCH 7
+Time 1.98  min
+Train loss: 32.53715455532074
+Accuracy :
+0.405
+Confusion matrix :
+[[34 24 24]
+ [11 17 13]
+ [21 26 30]]
+Accuracy low :
+0.6
+Accuracy medium :
+0.63
+Accuracy high :
+0.58
+Average accuracy :
+0.6033333333333334
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.52      0.41      0.46        82
+           1       0.25      0.41      0.31        41
+           2       0.45      0.39      0.42        77
+
+    accuracy                           0.41       200
+   macro avg       0.41      0.41      0.40       200
+weighted avg       0.44      0.41      0.41       200
+
+Test loss: 7.729
+Test accuracy: 40.50%
+
+==================== BEST TEST ACCURACY =================================
+0.415
+EPOCH 8
+Time 2.05  min
+Train loss: 32.51384687423706
+Accuracy :
+0.415
+Confusion matrix :
+[[35 22 25]
+ [11 17 13]
+ [19 27 31]]
+Accuracy low :
+0.615
+Accuracy medium :
+0.635
+Accuracy high :
+0.58
+Average accuracy :
+0.61
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.54      0.43      0.48        82
+           1       0.26      0.41      0.32        41
+           2       0.45      0.40      0.42        77
+
+    accuracy                           0.41       200
+   macro avg       0.42      0.41      0.41       200
+weighted avg       0.45      0.41      0.42       200
+
+Test loss: 7.732
+Test accuracy: 41.50%
+
+==================== BEST TEST ACCURACY =================================
+0.415
+EPOCH 9
+Time 2.11  min
+Train loss: 32.46442246437073
+Accuracy :
+0.39
+Confusion matrix :
+[[33 18 31]
+ [12 16 13]
+ [22 26 29]]
+Accuracy low :
+0.585
+Accuracy medium :
+0.655
+Accuracy high :
+0.54
+Average accuracy :
+0.5933333333333334
+Classification report :
+              precision    recall  f1-score   support
+
+           0       0.49      0.40      0.44        82
+           1       0.27      0.39      0.32        41
+           2       0.40      0.38      0.39        77
+
+    accuracy                           0.39       200
+   macro avg       0.39      0.39      0.38       200
+weighted avg       0.41      0.39      0.40       200
+
+Test loss: 7.722
+Test accuracy: 39.00%
+
+==================== BEST TEST ACCURACY =================================
+0.415

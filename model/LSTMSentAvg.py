@@ -15,7 +15,7 @@ class LSTMSentAvg(nn.Module):
 
     def __init__(self, params, data_obj):
         super(LSTMSentAvg, self).__init__()
-        sys.stdout = open('sentavgggg.txt', 'w')
+        sys.stdout = open('sentavg-clinton.txt', 'w')
         self.data_obj = data_obj
         self.task = params['task']
         self.embedding_dim = params['embedding_dim']

@@ -24,6 +24,7 @@ const [modele, setModele] = useState(null);
 const [modeles, setModeles] = useState([]);
 const [loading, setLoading] = useState(true);
 const [checked, setChecked] = useState(true);
+const [checkedList, setCheckedList] = useState([]);
 const [responsive, setResponsive] = useState("vertical");
 const [tableBodyHeight, setTableBodyHeight] = useState("400px");
 const [tableBodyMaxHeight, setTableBodyMaxHeight] = useState("");
@@ -31,8 +32,10 @@ const [openAjout, setOpenAjout] = useState(false);
 const [openModif, setOpenModif] = useState(false);
 const [modelNames, setModelNames] = useState([])
 
-const handleCheck = (event) => {
-    setChecked(event.target.checked);
+const handleCheck = () => {
+    // const updatedCheckedState = checkedList.map((item, index) =>
+    //   index === position ? !item : item)
+    console.log('h')
 };
 
 // const data = [
@@ -58,15 +61,15 @@ function selectProps(...props){
     // console.log(modeles.data)
     if(data) {
         setListeModeles(data);
-            console.log(listModeles)
-            const newList = data.map(selectProps("name", "visibility"));
-            // const liste_modeles = listModeles.map( obj => Object.values(obj) )
-            // console.log(liste_modeles)
-            var temp = newList.map( Object.values );
+            const tempList = data.map(selectProps("name"));
+            setModeles(tempList)
+            
+            var temp = tempList.map( Object.values );
             setRedListeModeles(temp)
             // getModelNames()
             setLoading(false)
-            // setModeles(liste_modeles)
+            console.log(modeles)
+            
     }
     })
   }, []);
@@ -77,26 +80,6 @@ const columns = [
         label: "Nom du modèle",
     },
     {
-        name: "visibility",
-        label: "Visibilité",
-        options: {
-        customBodyRender: () => {
-            return (
-            // <EtatVehiculeCol
-            //     value={value}
-            //     index={tableMeta.columnIndex}
-            //     change={event => updateValue(event)}
-            // />
-            <Checkbox
-                checked={checked}
-                onChange={handleCheck}
-                inputProps={{ 'aria-label': 'controlled' }}
-            />
-            )
-        }
-        }
-    },
-    {
         options: {
         viewColumns: false,
         filter: false,
@@ -104,7 +87,6 @@ const columns = [
             return (
                 <Button
                     href="#"
-                    // onClick={(e) => { e.preventDefault(); onRowSelect(dataIndex); handleOpenModif()}}
                     onClick={(e) => { e.preventDefault(); onRowSelection(dataIndex); handleOpenModif()}}
                     style={{fontFamily:'Poppins', backgroundColor:'#5885FB', color: "white", textTransform: "capitalize"}}
                     variant="filled"
@@ -126,6 +108,7 @@ const onRowSelection = async(dataIndex) => {
     // setModele(dataIndex);
     setModelName(dataIndex[0]);
     let model = listModeles.find(modele => modele.name == modelName)
+    console.log(dataIndex)
     // console.log(model)
     setModele(model);
     // if (!!props.setSel) props.setSel(rowData[0])

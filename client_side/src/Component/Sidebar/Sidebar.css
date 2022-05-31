@@ -81,3 +81,7 @@
         overflow: hidden;
     }
 }
+
+td {
+    padding: 3px;
+}

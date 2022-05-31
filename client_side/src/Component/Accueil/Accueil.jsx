@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import * as  React from 'react';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import axios from 'axios'
 import { Form, Row, Col, Stack } from "react-bootstrap";
 import Button from '@mui/material/Button';
@@ -12,7 +11,7 @@ import Popper from '@mui/material/Popper';
 import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import './Accueil.css'
-import Sidebar from '../Sidebar/Sidebar'
+// import Sidebar from '../Sidebar/Sidebar'
 import Result from '../Result/Result'
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -20,11 +19,11 @@ import ThreeSixtyIcon from '@mui/icons-material/ThreeSixty';
 import Typography from '@mui/material/Typography';
 import LooksOneIcon from '@mui/icons-material/LooksOne';
 import LooksTwoIcon from '@mui/icons-material/LooksTwo';
+const Sidebar = React.lazy(() => import('../Sidebar/Sidebar'));
 
 const Accueil = () => {
 
   const [text, setText] = useState("");
-  const options = ['Parenté sémantique entre les phrases', 'Parenté sémantique entre les paragraphes', 'Parenté sémantique entre les phrases et les paragraphes', 'Richesse lexicale', 'Richesse lexicale et parenté sémantique'];
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef(null);
   const hiddenFileInput = React.useRef(null);
@@ -37,6 +36,38 @@ const Accueil = () => {
   const [chartLength, setChartLength] = useState(0);
   const [array_cell, setArray] = useState(null);
   const [fileName, setFileName] = useState(null)
+  const [modeles, setModeles] = useState(null)
+  const [descriptionList, setDescriptionList] = useState({})
+  const [modelNames, setModelNames] = useState(null)
+  const [performances, setPerformances] = useState([])
+
+  function selectProps(...props){
+    return function(obj){
+      const newObj = {};
+      props.forEach(name =>{
+        newObj[name] = obj[name];
+      });
+      return newObj;
+    }
+  }
+
+  useEffect(() => {
+    axios.get('http://localhost:8080/models').then( async (res) => {
+    const {data} = res;
+    console.log(data)
+    if(data) {
+        setModeles(data);
+        const descriptions = data.map(selectProps("description"));
+        var temp = descriptions.map( Object.values );
+        setDescriptionList(temp.flat(1))
+        const tempPerf = data.map(selectProps("accuracy", "precision", "rappel", "F1_score"))
+        setPerformances(tempPerf)
+        const names = data.map(selectProps("name"));
+        var temp = names.map( Object.values );
+        setModelNames(temp.flat(1))
+    }
+    })
+  }, [data]);
 
   function createData(text_id, text, original_score, predicted_score) {
     return { text_id, text, original_score, predicted_score };
@@ -209,8 +240,10 @@ const Accueil = () => {
   }
 
   return (
-    <>
-      <Sidebar selectedIndex={selectedIndex} />
+    <>      
+      <Suspense fallback={<div>Loading...</div>}>
+        <Sidebar selectedIndex={selectedIndex} descriptionList={descriptionList} performances={performances}/>
+      </Suspense>
       <div id="firstSection">
         <div style={{ marginTop: '1%' }} >
           <Box
@@ -273,8 +306,6 @@ const Accueil = () => {
             <Item><Typography sx={{ fontFamily: 'Poppins', fontSize: '16px', padding: '50% 0px' }}>Ou</Typography></Item>
           </Box>
 
-          {/* <Button type="button" id='import_btn' onClick={handleImport}>Importer un fichier</Button> */}
-
           <div id="secondSection">
             <div>
               <Box
@@ -299,7 +330,10 @@ const Accueil = () => {
 
             <div id='analyser_btn'>
               <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button" sx={{ zIndex: 1 }}>
-                <Button onClick={handleClick} sx={{ width: '400px' }} >{options[selectedIndex]}</Button>
+                <Button onClick={handleClick} sx={{ width: '400px' }} >
+                  { modelNames ? modelNames[selectedIndex] : [] }
+                </Button>
+                {/* modelNames ? {modelNames[selectedIndex]} : [] */}
                 <Button
                   size="small"
                   aria-controls={open ? 'split-button-menu' : undefined}
@@ -329,7 +363,7 @@ const Accueil = () => {
                     <Paper>
                       <ClickAwayListener onClickAway={handleClose}>
                         <MenuList id="split-button-menu" autoFocusItem>
-                          {options.map((option, index) => (
+                          {modelNames.map((option, index) => (
                             <MenuItem
                               key={option}
                               selected={index === selectedIndex}

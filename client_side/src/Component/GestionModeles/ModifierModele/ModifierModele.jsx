@@ -9,6 +9,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import { Typography } from '@mui/material';
 import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
 import axios from "axios";
 
 const ModifierModele = (props) => {
@@ -66,10 +67,12 @@ const ModifierModele = (props) => {
           temp.accuracy = fieldValues.accuracy ? "" : "Ce champs est requis."
       if ('precision' in fieldValues)
           temp.precision = fieldValues.precision ? "" : "Ce champs est requis."
-    //   if ('rappel' in fieldValues)
-    //       temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
+      if ('rappel' in fieldValues)
+          temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
       if ('F1_score' in fieldValues)
           temp.F1_score = fieldValues.F1_score ? "" : "Ce champs est requis."
+    if ('visibility' in fieldValues)
+          temp.visibility = fieldValues.visibility ? "" : "Ce champs est requis."
       setErrors({
           ...temp
       })
@@ -125,9 +128,10 @@ const ModifierModele = (props) => {
             "description": state.description,
             "F1_score": state.F1_score,
             "precision": state.precision,
+            "rappel": state.rappel,
             "accuracy": state.accuracy,
             "visibility" : state.visibility
-            // rappel: state.rappel,
+            
             
           })
             .then((response) => {
@@ -249,6 +253,23 @@ const ModifierModele = (props) => {
                         </div>
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
+                            <InputLabel id="demo-simple-select-label">Visibilité</InputLabel>
+                            <Select
+                                required
+                                error={errors.visibility === "" ? false : ""}
+                                id="visibility"
+                                variant="outlined"
+                                value={state.visibility}
+                                label="Visibilité"
+                                onChange={handleChange('visibility')}
+                                fullWidth='true'
+                            >
+                            <MenuItem value={true}>Oui</MenuItem>
+                            <MenuItem value={false}>Non</MenuItem>
+                            </Select>
+                        </div>
+                        <br></br>
+                        <div style={{padding:"5px 40px"}}>
                           <TextField
                                 required
                                 error={errors.accuracy === "" ? false : ""}
@@ -279,7 +300,7 @@ const ModifierModele = (props) => {
                                 onChange={handleChange('precision')}
                               />
                         </div>
-                        {/* <br></br>
+                        <br></br>
                         <div style={{padding:"5px 40px"}}>
                           <TextField
                               required
@@ -294,7 +315,7 @@ const ModifierModele = (props) => {
                               onChange={handleChange('rappel')}
                               value={state.rappel}
                             />
-                        </div> */}
+                        </div>
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
                           <TextField
