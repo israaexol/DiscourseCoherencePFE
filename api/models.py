@@ -20,7 +20,7 @@ class Model(Base):
     precision = Column(String(255))
     accuracy = Column(String(255))
     rappel = Column(String(255)) # new
-    file_name = Column(String(255)) # new
+    saved_model_pickle = Column(String(255)) # new
     preprocess = Column(String(255)) # new
-    hybridation = Column(Boolean, server_default='True',nullable = False) #new
+    hybridation = Column(Boolean, server_default='False') #new
     visibility = Column(Boolean, server_default='True',nullable = False)

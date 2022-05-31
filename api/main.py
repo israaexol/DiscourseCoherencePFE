@@ -2,6 +2,12 @@ from asyncio.log import logger
 from lib2to3.pgen2 import token
 from xmlrpc.client import Boolean
 from sqlalchemy import false, true
+from LSTMSemRel import LSTMSemRel
+from LSTMSentAvg import LSTMSentAvg
+from LSTMParSeq import LSTMParSeq
+from CNNPosTag import CNNPosTag
+from FusionSemSyn import FusionSemSyn
+
 import uvicorn
 import pickle
 import random
@@ -73,7 +79,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-sys.stdout = open('test.txt', 'w')
+#sys.stdout = open('test.txt', 'w')
 
 
 class NumpyArrayEncoder(JSONEncoder):
@@ -95,8 +101,8 @@ params = {
 }
 
 dataObj = Data(params)
-word_to_idx = pickle.load(open('word_to_idx.pkl', 'rb'))
-idx_to_word = pickle.load(open('idx_to_word.pkl', 'rb'))
+word_to_idx = pickle.load(open('./pickle_files/word_to_idx.pkl', 'rb'))
+idx_to_word = pickle.load(open('./pickle_files/idx_to_word.pkl', 'rb'))
 dataObj.word_embeds = embeddings
 dataObj.word_to_idx = word_to_idx
 dataObj.idx_to_word = idx_to_word
@@ -265,42 +271,58 @@ async def pickle(pickle: UploadFile = File(...)):
 async def get_predict(data: Inputs, db: Session = Depends(get_db)):
     model_id = data.selectedIndex
     sample = data.text
-
     model_db = get_one_model(model_id, db)
-    file_name = model_db.file_name
-    process_level = model_db.preprocess
-    model = torch.load(
-        './pickle_files/'+file_name)
-    model.eval()
-    grid_search = False
-    if process_level == "sémantique phrases":  # sentavg + Bert
+    if model_db.saved_model_pickle == "sent_avg.pt":
+        model = torch.load(
+            './pickle_files/sent_avg.pt')
+        model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
             sample)
-    elif process_level == "sémantique paragraphes":  # parseq + semrel
+        pred, avg_deg = model.forward(
+            batch_padded, batch_lengths, original_index, dim=1)
+        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+
+    elif model_db.saved_model_pickle == "par_seq.pt":
+        model = torch.load('./pickle_files/par_seq.pt')
+        model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_parseq(
             sample)
-        if file_name == "semrel":
-            grid_search = True
-
-    elif process_level == "syntaxique":  # cnnpostag
-        batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
+        pred, avg_deg = model.forward(
+            batch_padded, batch_lengths, original_index, dim=1)
+        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+    elif model_db.saved_model_pickle == "sem_rel.pt":
+        model = torch.load('./pickle_files/sem_rel.pt')
+        model.eval()
+        batch_padded, batch_lengths, original_index = preprocess_data_parseq(
             sample)
-    else:  # fusionsemsyn
-        batch_padded_postag, batch_lengths_postag, original_index_postag = preprocess_data_cnnpostag(
-            sample)
-        batch_padded_sem, batch_lengths_sem, original_index_sem = preprocess_data_parseq(
-            sample)
-        grid_search = True
-
-    if grid_search == True:  # semrel + fusion_semsyn
         pred = model.forward(batch_padded, batch_lengths,
                              original_index, weights=best_weights, dim=1)
-    else:
-        pred = model.forward(  # sentavg + parseq + cnnpostag
-            batch_padded, batch_lengths, original_index, dim=1)
+        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+    elif model_db.saved_model_pickle == "cnn_postag.pt":
+        model = torch.load(
+            './pickle_files/cnn_postag.pt')
+        model.eval()
+        batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
+            sample)
+        pred = model.forward(batch_padded, batch_lengths,
+                             original_index, dim=1)
+        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+    elif model_db.saved_model_pickle == "sem_syn.pt":
+        model = pickle.load(open('./pickle_files/sem_syn.pt', 'rb'))
+        model.eval()
+        batch_padded_cnn, batch_lengths_cnn, original_index_cnn = preprocess_data_cnnpostag(
+            sample)
+        batch_padded_semrel, batch_lengths_semrel, original_index_semrel = preprocess_data_parseq(
+            sample)
+        pred = model.forward(batch_padded_semrel, batch_padded_cnn, batch_lengths_semrel,
+                             batch_lengths_cnn, original_index, weights=best_weights, dim=1)
+    else:  # Bert
 
-    argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-    score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+        model = pickle.load(open('./pickle_files/sem_syn.pt', 'rb'))
     return {
         "data": {
             'score': score
@@ -309,7 +331,7 @@ async def get_predict(data: Inputs, db: Session = Depends(get_db)):
 
 
 @app.post("/uploadfile")
-async def get_predict_file(model_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def get_predict_file(niveau: int, file: UploadFile = File(...),  db: Session = Depends(get_db)):
     content_assignment = await file.read()
     data = convert_csv(content_assignment)
 
@@ -317,50 +339,176 @@ async def get_predict_file(model_id: int, file: UploadFile = File(...), db: Sess
     text_ids = []
     texts = []
     original_scores = []
-
-    model_db = get_one_model(model_id, db)
-    file_name = model_db.file_name
-    process_level = model_db.preprocess
-
-    model = torch.load(
-        './pickle_files/'+file_name+'.pt')
-    model.eval()
-    grid_search = False
+    model_db = get_one_model(niveau, db)
     for i in range(len(data)):
         sample = data[i]['text']
         text_ids.append(data[i]['text_id'])
         texts.append(data[i]['text'])
         original_scores.append(data[i]['labelA'])
-        if process_level == "sémantique phrases":  # sentavg + Bert
+        if model_db.saved_model_pickle == "sent_avg.pt":
+            model = torch.load('./pickle_files/sent_avg.pt')
+            model.eval()
             batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
                 sample)
-        elif process_level == "sémantique paragraphes":  # parseq + semrel
+            pred, avg_deg = model.forward(
+                batch_padded, batch_lengths, original_index, dim=1)
+            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+
+        elif model_db.saved_model_pickle == "par_seq.pt":
+            model = torch.load('./pickle_files/par_seq.pt')
+            model.eval()
             batch_padded, batch_lengths, original_index = preprocess_data_parseq(
                 sample)
-            if file_name == "semrel":
-                grid_search = True
-
-        elif process_level == "syntaxique":  # cnnpostag
-            batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
+            pred, avg_deg = model.forward(
+                batch_padded, batch_lengths, original_index, dim=1)
+            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+        elif model_db.saved_model_pickle == "sem_rel.pt":
+            model = torch.load(
+                './pickle_files/sem_rel.pt')
+            model.eval()
+            batch_padded, batch_lengths, original_index = preprocess_data_parseq(
                 sample)
-        else:  # fusionsemsyn
-            batch_padded_postag, batch_lengths_postag, original_index_postag = preprocess_data_cnnpostag(
-                sample)
-            batch_padded_sem, batch_lengths_sem, original_index_sem = preprocess_data_parseq(
-                sample)
-            grid_search = True
-
-        if grid_search == True:  # semrel + fusion_semsyn
             pred = model.forward(batch_padded, batch_lengths,
                                  original_index, weights=best_weights, dim=1)
-        else:
-            pred = model.forward(  # sentavg + parseq + cnnpostag
+            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+        elif model_db.saved_model_pickle == "cnn_postag.pt":
+            model = torch.load(
+                './pickle_files/cnn_postag.pt')
+            model.eval()
+            batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
+                sample)
+            pred = model.forward(
                 batch_padded, batch_lengths, original_index, dim=1)
+            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+        elif model_db.saved_model_pickle == "sem_syn.pt":
+            model = pickle.load(open('./pickle_files/sem_syn.pt', 'rb'))
+            model.eval()
+            batch_padded_cnn, batch_lengths_cnn, original_index_cnn = preprocess_data_cnnpostag(
+                sample)
+            batch_padded_semrel, batch_lengths_semrel, original_index_semrel = preprocess_data_parseq(
+                sample)
+            pred = model.forward(batch_padded_semrel, batch_padded_cnn, batch_lengths_semrel,
+                                 batch_lengths_cnn, original_index, weights=best_weights, dim=1)
+            argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
+        else:
+            model = pickle.load(open('../model/sem_syn_cv.pkl', 'rb'))
 
-        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-        scores.append(score)
+    print(scores)
     return {"data":  {"scores": scores, "text_ids": text_ids, "texts": texts, "original_scores": original_scores}}
+
+
+# @app.post("/evaluate")
+# async def get_predict(data: Inputs, db: Session = Depends(get_db)):
+#     model_id = data.selectedIndex
+#     sample = data.text
+
+#     model_db = get_one_model(model_id, db)
+#     print("-----------------------------------------------------------")
+#     print(model_db)
+#     file_name = model_db.file_name
+#     print(file_name)
+#     process_level = model_db.preprocess
+#     model = torch.load(
+#         './pickle_files/'+file_name)
+#     model.eval()
+#     grid_search = False
+#     if process_level == "sémantique phrases":  # sentavg + Bert
+#         batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
+#             sample)
+#     elif process_level == "sémantique paragraphes":  # parseq + semrel
+#         batch_padded, batch_lengths, original_index = preprocess_data_parseq(
+#             sample)
+#         if file_name == "sem_rel.pt":
+#             grid_search = True
+
+#     elif process_level == "syntaxique":  # cnnpostag
+#         batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
+#             sample)
+#     else:  # fusionsemsyn
+#         batch_padded_postag, batch_lengths_postag, original_index_postag = preprocess_data_cnnpostag(
+#             sample)
+#         batch_padded_sem, batch_lengths_sem, original_index_sem = preprocess_data_parseq(
+#             sample)
+#         grid_search = True
+
+#     if model_db.hybridation== True:  # semrel + fusion_semsyn
+
+#         pred = model.forward(batch_padded, batch_lengths,original_index, weights=best_weights, dim=1) #dim=1????
+#     else:
+#         pred = model.forward(batch_padded, batch_lengths, original_index, dim=1)# sentavg + parseq + cnnpostag
+
+#     argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+#     score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+#     return {
+#         "data": {
+#             'score': score
+#         }
+#     }
+
+
+# @app.post("/uploadfile")
+# async def get_predict_file(model_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+#     content_assignment = await file.read()
+#     data = convert_csv(content_assignment)
+
+#     scores = []
+#     text_ids = []
+#     texts = []
+#     original_scores = []
+
+#     model_db = get_one_model(model_id, db)
+#     file_name = model_db.file_name
+#     process_level = model_db.preprocess
+
+#     model = torch.load(
+#         './pickle_files/'+file_name)
+#     model.eval()
+#     grid_search = False
+#     for i in range(len(data)):
+#         sample = data[i]['text']
+#         text_ids.append(data[i]['text_id'])
+#         texts.append(data[i]['text'])
+#         original_scores.append(data[i]['labelA'])
+#         if process_level == "sémantique phrases":  # sentavg + Bert
+#             batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
+#                 sample)
+#         elif process_level == "sémantique paragraphes":  # parseq + semrel
+#             batch_padded, batch_lengths, original_index = preprocess_data_parseq(
+#                 sample)
+#             if file_name == "sem_rel.pt":
+#                 grid_search = True
+
+#         elif process_level == "syntaxique":  # cnnpostag
+#             batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
+#                 sample)
+#         else:  # fusionsemsyn
+#             batch_padded_postag, batch_lengths_postag, original_index_postag = preprocess_data_cnnpostag(
+#                 sample)
+#             batch_padded_sem, batch_lengths_sem, original_index_sem = preprocess_data_parseq(
+#                 sample)
+#             grid_search = True
+
+#         if grid_search == True:  # semrel + fusion_semsyn
+#             pred = model.forward(batch_padded, batch_lengths,
+#                                  original_index, weights=best_weights, dim=1)
+#         else:
+#             pred = model.forward(  # sentavg + parseq + cnnpostag
+#                 batch_padded, batch_lengths, original_index, dim=1)
+
+#         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+#         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+#         scores.append(score)
+#     return {"data":  {"scores": scores, "text_ids": text_ids, "texts": texts, "original_scores": original_scores}}
 
 
 # Retourner les liste de tous les modèles avec les détails pour l'interface admin
@@ -387,7 +535,7 @@ def get_one_model(model_id: int, db: Session = Depends(get_db)):
 
 
 @app.get('/description/{model_id}', status_code=200)
-def get_one_model(model_id: int, db: Session = Depends(get_db)):
+def get_one_model_desc(model_id: int, db: Session = Depends(get_db)):
     db_model = db.query(ModelModel.description).filter(
         ModelModel.id == model_id and ModelModel.visibility == True).first()
     if db_model is None:
@@ -417,7 +565,7 @@ def add_model(model: SchemaModel, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Modèle déjà existant")
     else:
         db_model = ModelModel(name=model.name, description=model.description,
-                              F1_score=model.F1_score, precision=model.precision, accuracy=model.accuracy,  rappel=model.rappel, file_name=model.file_name, preprocess=model.preprocess, hybridation=model.hybridation)
+                              F1_score=model.F1_score, precision=model.precision, accuracy=model.accuracy,  rappel=model.rappel, saved_model_pickle=model.saved_model_pickle, preprocess=model.preprocess, hybridation=model.hybridation)
         db.add(db_model)
         db.commit()
         return db_model
@@ -439,12 +587,14 @@ def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db
         model_to_update.precision = model.precision
     if model.accuracy:
         model_to_update.accuracy = model.accuracy
-    if model.rappel: 
+    if model.rappel:
         model_to_update.rappel = model.rappel
-    if model.preprocess : 
+    if model.preprocess:
         model_to_update.preprocess = model.preprocess
-    if model.hybridation : 
-        model_to_update = model.hybridation
+    if model.hybridation:
+        model_to_update.hybridation = model.hybridation
+    if model.visibility:
+        model_to_update.visibility = model.visibility
     db.commit()
     return model_to_update
 
