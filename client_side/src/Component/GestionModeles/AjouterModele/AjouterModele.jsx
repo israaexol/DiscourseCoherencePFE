@@ -22,7 +22,7 @@ export const AjouterModele = ({handleCloseAjout}) => {
     const [state, setState] = useState({
         id: 55,
         name: '',
-        niveaupreprocess : '',
+        preprocess : '',
         description: '',
         accuracy: '',
         precision: '',
@@ -40,8 +40,8 @@ export const AjouterModele = ({handleCloseAjout}) => {
     const [success, setSuccess] = useState(false)
     const [data, setData] = useState(null)
     const [fileName, setFileName] = useState(null)
-    const { name, niveaupreprocess, description, accuracy, precision, F1_score } = state;
-    const values = { name, niveaupreprocess, description, accuracy, precision, F1_score };
+    const { name, description, accuracy, precision, rappel, F1_score, preprocess } = state;
+    const values = { name, description, accuracy, precision, rappel, F1_score, preprocess };
 
     // handle fields change
     const handleChange = input => e => {
@@ -60,8 +60,6 @@ export const AjouterModele = ({handleCloseAjout}) => {
         let temp = { ...errors }
         if ('name' in fieldValues)
             temp.name = fieldValues.name ? "" : "Ce champs est requis."
-        if ('niveaupreprocess' in fieldValues)
-            temp.niveaupreprocess = fieldValues.niveaupreprocess ? "" : "Ce champs est requis."
         if ('description' in fieldValues)
             temp.description = fieldValues.description ? "" : "Ce champs est requis."
         if ('accuracy' in fieldValues)
@@ -72,6 +70,11 @@ export const AjouterModele = ({handleCloseAjout}) => {
             temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
         if ('F1_score' in fieldValues)
             temp.F1_score = fieldValues.F1_score ? "" : "Ce champs est requis."
+        if ('preprocess' in fieldValues)
+            temp.preprocess = fieldValues.preprocess ? "" : "Ce champs est requis."
+        if (!fileName)
+            temp.file_name = "Ce champs est requis."
+            // "hybridation": hybridation,
         setErrors({
             ...temp
         })
@@ -142,6 +145,7 @@ export const AjouterModele = ({handleCloseAjout}) => {
 
     const handleImport = event => {
         hiddenFileInput.current.click();
+        
 
     };
 
@@ -149,22 +153,45 @@ export const AjouterModele = ({handleCloseAjout}) => {
         const fileUploaded = event.target.files[0];
         if (fileUploaded) {
             let dataFile = new FormData();
-            dataFile.append('file', fileUploaded);
+            console.log(fileUploaded)
+            dataFile.append('pickle', fileUploaded);
+            // while(Object.keys(dataFile).length === 0) {
+
+                
+            //     console.log(dataFile)
+            // }
+            
             setData(dataFile)
             setFileName(fileUploaded.name)
+            console.log(fileName)
         }
     };
 
+    const uploadFile = () => {
+        axios
+        .post('http://localhost:8080/addpickle_model', data)
+        .then((res) => {
+          console.log("fichier " + fileName +" importé")
+        })
+        .catch((error) => {
+          alert(`Error: ${error.message}`)
+        })
+    }
+
     const addModele = useCallback(
         async () => {
+            uploadFile()
             await axios.post('http://localhost:8080/add_model', {
                 "id": 55,
                 "name" : name,
-                "niveaupreprocess" : niveaupreprocess,
                 "description" : description,
                 "F1_score": F1_score,
                 "precision" : precision,
                 "accuracy" : accuracy,
+                "rappel": rappel,
+                "file_name": fileName,
+                "preprocess" : preprocess,
+                "hybridation": false,
                 "visibility": true
             })
             .then((response) => {
@@ -217,16 +244,16 @@ export const AjouterModele = ({handleCloseAjout}) => {
                         <div style={{padding:"5px 40px"}}>
                             <TextField
                                 required
-                                error={errors.niveaupreprocess === "" ? false : ""}
-                                id="niveaupreprocess"
+                                error={errors.preprocess === "" ? false : ""}
+                                id="preprocess"
                                 label="Niveau de prétraitement"
                                 InputLabelProps={{
                                     shrink: true,
                                 }}
                                 variant="outlined"
                                 fullWidth='true'
-                                onChange={handleChange('niveaupreprocess')}
-                                value={values.niveaupreprocess}
+                                onChange={handleChange('preprocess')}
+                                value={values.preprocess}
                                 type='string'
                             />
                         </div>
