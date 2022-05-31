@@ -72,12 +72,11 @@ const Accueil = () => {
           let table_details = []
           setChartLength(score.length)
           let index = 0
-          alert(score)
           while (index < score.length) {
             score[index]++;
             index++;
           }
-          alert(score)
+          //alert(score)
           // var myArray = JSON.Parse(score);
           let chart_result = [
             {
