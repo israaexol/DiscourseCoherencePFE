@@ -256,6 +256,7 @@ def read_root():
 # Uploader le pickle file d'un nouveau modèle
 @app.post('/addpickle_model')
 async def pickle(pickle: UploadFile = File(...)):
+    print("============================HELLLLLLLLLLLLLLLLLLLLLLLLO======================")
     with open("pickle_files/"+pickle.filename, "wb") as buffer:
         shutil.copyfileobj(pickle.file, buffer)
     return {"filename": pickle.filename}
@@ -387,7 +388,7 @@ def get_one_model(model_id: int, db: Session = Depends(get_db)):
 
 
 @app.get('/description/{model_id}', status_code=200)
-def get_one_model(model_id: int, db: Session = Depends(get_db)):
+def get_one_model_desc(model_id: int, db: Session = Depends(get_db)):
     db_model = db.query(ModelModel.description).filter(
         ModelModel.id == model_id and ModelModel.visibility == True).first()
     if db_model is None:
@@ -444,7 +445,7 @@ def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db
     if model.preprocess : 
         model_to_update.preprocess = model.preprocess
     if model.hybridation : 
-        model_to_update = model.hybridation
+        model_to_update.hybridation = model.hybridation
     db.commit()
     return model_to_update
 
