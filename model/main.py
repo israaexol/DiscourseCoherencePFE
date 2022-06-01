@@ -123,8 +123,8 @@ vectors = None
 # Utiliser GloVe sérialisé  
 
 embeddings = pickle.load(open('word_embeds.pkl', 'rb'))
-word_to_idx = pickle.load(open('../api/word_to_idx.pkl', 'rb'))
-idx_to_word = pickle.load(open('../api/idx_to_word.pkl', 'rb'))
+word_to_idx = pickle.load(open('../api/pickle_files/word_to_idx.pkl', 'rb'))
+idx_to_word = pickle.load(open('../api/pickle_files/idx_to_word.pkl', 'rb'))
 data.word_embeds = embeddings
 data.word_to_idx = word_to_idx
 data.idx_to_word = idx_to_word
