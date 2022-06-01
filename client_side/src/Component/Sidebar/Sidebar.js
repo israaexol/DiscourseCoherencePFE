@@ -47,7 +47,7 @@ const Sidebar = ({selectedIndex, descriptionList, performances}) => {
                 qui évalue la cohérence d'un discours à travers les similarités
                 cosines entre <b>ses paragraphes</b> (i.e à un niveau plus global),
                 en modélisant ainsi la parenté sémantique entre elles */}
-            {descriptionList ? descriptionList[selectedIndex] : `Chargement...`}
+            {/* {descriptionList ? descriptionList[selectedIndex] : `Chargement...`} */}
         </Typography>
         <br/>
         {/* <Typography variant="body2" sx={{ fontFamily: 'Poppins', fontWeight: 700, color: '#079615' }}>
@@ -78,19 +78,19 @@ const Sidebar = ({selectedIndex, descriptionList, performances}) => {
                         <table>
                           <tr>
                             <td><b>Exactitude</b></td>
-                            <td>{performances ? performances[selectedIndex]["accuracy"] : `...`}</td>
+                            {/* <td>{performances ? performances[selectedIndex]["accuracy"] : `...`}</td> */}
                           </tr>
                           <tr>
                             <td><b>Précision</b></td>
-                            <td>{performances ? performances[selectedIndex]["precision"] : `...`}</td>
+                            {/* <td>{performances ? performances[selectedIndex]["precision"] : `...`}</td> */}
                           </tr>
                           <tr>
                             <td><b>Rappel</b></td>
-                            <td>{performances ? performances[selectedIndex]["rappel"] : `...`}</td>
+                            {/* <td>{performances ? performances[selectedIndex]["rappel"] : `...`}</td> */}
                           </tr>
                           <tr>
                             <td><b>Score F1</b></td>
-                            <td>{performances ? performances[selectedIndex]["F1_score"] : `...`}</td>
+                            {/* <td>{performances ? performances[selectedIndex]["F1_score"] : `...`}</td> */}
                           </tr>
 
                         </table>

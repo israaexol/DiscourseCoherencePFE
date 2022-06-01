@@ -15,14 +15,22 @@ import axios from "axios";
 const ModifierModele = (props) => {
 
   const [state, setState] = useState({});
+  const [visibilite, setVisibilite] = useState( { visibility: ''});
   const [modelID, setModelID] = useState('')
+  const [slideModif, setSlideModif] = useState(null)
+  const [modifSuccess, setModifSuccess] = useState(null)
+  const [errors, setErrors] = useState({})
+  const [slide, setSlide] = useState(null)
+  const [annuler, setAnnuler] = useState(null)
+  const [confirmer, setConfirmer] = useState(null)
 
   const getModele = () => {
         if(props.modele) {
             setState(props.modele)
             setModelID(props.modele.id)
+            setVisibilite({visibility : state.visibility})
         }
-        console.log(state)
+        console.log(props.modele)
     }
   useEffect(() => {
     getModele();
@@ -30,16 +38,23 @@ const ModifierModele = (props) => {
 
   // handle fields change
   const handleChange = input => e => {
-      setState({...state, [input]: e.target.value})
+    if(input == 'visibility') {
+        console.log("hello")
+        // var vis = (e.target.value === "true");
+        // setVisibilite({visibility : vis})
+        setState({...state, ['visibility']: e.target.value === 'true'})
+      }
+    else {
+        setState({...state, [input]: e.target.value})
+    }  
+      
+      
+      
+    //   setState({...state, [vis]: e.target.value})
       console.log(state)
   }
 
   const handleCloseModif = props.handleCloseModif
-
-  const [errors, setErrors] = useState({})
-  const [slide, setSlide] = useState(null)
-  const [annuler, setAnnuler] = useState(null)
-  const [confirmer, setConfirmer] = useState(null)
 
   const handleOpenAnnuler = () => {
       setAnnuler(true)
@@ -71,8 +86,6 @@ const ModifierModele = (props) => {
           temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
       if ('F1_score' in fieldValues)
           temp.F1_score = fieldValues.F1_score ? "" : "Ce champs est requis."
-    if ('visibility' in fieldValues)
-          temp.visibility = fieldValues.visibility ? "" : "Ce champs est requis."
       setErrors({
           ...temp
       })
@@ -91,8 +104,7 @@ const ModifierModele = (props) => {
       </div>
   )
 
-  const [slideModif, setSlideModif] = useState(null)
-  const [modifSuccess, setModifSuccess] = useState(null)
+  
   const modifSuccessMessage = (
       <div style={{margin:'20px 0px', padding:'12px'}}>
                 {(modifSuccess == true) && (
@@ -126,13 +138,14 @@ const ModifierModele = (props) => {
             "id": state.id,
             "name": state.name,
             "description": state.description,
+            "file_name": state.file_name,
+            "hybridation": state.hybridation,
+            "preprocess": state.preprocess,
             "F1_score": state.F1_score,
             "precision": state.precision,
             "rappel": state.rappel,
             "accuracy": state.accuracy,
             "visibility" : state.visibility
-            
-            
           })
             .then((response) => {
                 setSlideModif(true)
@@ -212,6 +225,17 @@ const ModifierModele = (props) => {
             </Dialog>
         </div>
     )
+
+    const visibilities = [
+        {
+            label: "Oui",
+            value: true,
+        },
+        {
+            label: "Non",
+            value: false,
+        },
+    ]
     
         return (
              <Container fluid style={{paddingBottom:"40px"}}>
@@ -231,7 +255,7 @@ const ModifierModele = (props) => {
                                 shrink: true,
                               }}
                               fullWidth='true'
-                              value={state.name}
+                              value={state.name ?? ''}
                               onChange={handleChange('name')}
                           />
                         </div>
@@ -247,26 +271,18 @@ const ModifierModele = (props) => {
                                 shrink: true,
                               }}
                               fullWidth='true'
-                              value={state.description}
+                              value={state.description ?? ''}
                               onChange={handleChange('description')}
                           />
                         </div>
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
                             <InputLabel id="demo-simple-select-label">Visibilité</InputLabel>
-                            <Select
-                                required
-                                error={errors.visibility === "" ? false : ""}
-                                id="visibility"
-                                variant="outlined"
-                                value={state.visibility}
-                                label="Visibilité"
-                                onChange={handleChange('visibility')}
-                                fullWidth='true'
-                            >
-                            <MenuItem value={true}>Oui</MenuItem>
-                            <MenuItem value={false}>Non</MenuItem>
-                            </Select>
+                            <select value={state.visibility ?? ''} onChange={handleChange('visibility')}>
+                                {visibilities.map((option) => (
+                                <option value={option.value}>{option.label}</option>
+                                ))}
+                            </select>
                         </div>
                         <br></br>
                         <div style={{padding:"5px 40px"}}>
@@ -280,7 +296,7 @@ const ModifierModele = (props) => {
                                   shrink: true,
                                 }}
                                 fullWidth='true'
-                                value={state.accuracy}
+                                value={state.accuracy ?? ''}
                                 onChange={handleChange('accuracy')}
                             />
                         </div>
@@ -296,7 +312,7 @@ const ModifierModele = (props) => {
                                   shrink: true,
                                 }}
                                 fullWidth='true'
-                                value={state.precision}
+                                value={state.precision ?? ''}
                                 onChange={handleChange('precision')}
                               />
                         </div>
@@ -313,7 +329,7 @@ const ModifierModele = (props) => {
                               }}
                               fullWidth='true'
                               onChange={handleChange('rappel')}
-                              value={state.rappel}
+                              value={state.rappel ?? ''}
                             />
                         </div>
                         <br></br>
@@ -328,7 +344,7 @@ const ModifierModele = (props) => {
                                   shrink: true,
                                 }}
                                 fullWidth='true'
-                                value={state.F1_score}
+                                value={state.F1_score ?? ''}
                                 onChange={handleChange('F1_score')}
                             />
                         </div>
