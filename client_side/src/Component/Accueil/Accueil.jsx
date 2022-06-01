@@ -40,11 +40,15 @@ const Accueil = () => {
   const [descriptionList, setDescriptionList] = useState({})
   const [modelNames, setModelNames] = useState(null)
   const [performances, setPerformances] = useState([])
+  const [accuracy, setAccuracy] = useState()
+  const [precision, setPrecision] = useState()
+  const [rappel, setRappel] = useState()
+  const [f1_score, setF1score] = useState()
 
-  function selectProps(...props){
-    return function(obj){
+  function selectProps(...props) {
+    return function (obj) {
       const newObj = {};
-      props.forEach(name =>{
+      props.forEach(name => {
         newObj[name] = obj[name];
       });
       return newObj;
@@ -52,20 +56,37 @@ const Accueil = () => {
   }
 
   useEffect(() => {
-    axios.get('http://localhost:8080/models').then( async (res) => {
-    const {data} = res;
-    console.log(data)
-    if(data) {
+    axios.get('http://localhost:8080/models').then(async (res) => {
+      const { data } = res;
+      console.log(data)
+      if (data) {
         setModeles(data);
         const descriptions = data.map(selectProps("description"));
-        var temp = descriptions.map( Object.values );
+        var temp = descriptions.map(Object.values);
         setDescriptionList(temp.flat(1))
         const tempPerf = data.map(selectProps("accuracy", "precision", "rappel", "F1_score"))
-        setPerformances(tempPerf)
+
+        const accuracy_const = data.map(selectProps("accuracy"));
+        var temp_acc = accuracy_const.map(Object.values);
+        setAccuracy(temp_acc.flat(1))
+
+        const precision_const = data.map(selectProps("precision"));
+        var temp_prec = precision_const.map(Object.values);
+        setPrecision(temp_prec.flat(1))
+
+        const rappel_const = data.map(selectProps("rappel"));
+        var temp_rapp = rappel_const.map(Object.values);
+        setRappel(temp_rapp.flat(1))
+
+        const F1_score_const = data.map(selectProps("F1_score"));
+        var temp_F1 = F1_score_const.map(Object.values);
+        setF1score(temp_F1.flat(1))
+
+
         const names = data.map(selectProps("name"));
-        var temp = names.map( Object.values );
+        var temp = names.map(Object.values);
         setModelNames(temp.flat(1))
-    }
+      }
     })
   }, [data]);
 
@@ -198,7 +219,7 @@ const Accueil = () => {
 
     setOpen(false);
   };
-  
+
   function RenderResult({ isLoading }) {
     if (isLoading === null) {
       return <Result hidden={true} />
@@ -240,9 +261,9 @@ const Accueil = () => {
   }
 
   return (
-    <>      
+    <>
       <Suspense fallback={<div>Loading...</div>}>
-        <Sidebar selectedIndex={selectedIndex} descriptionList={descriptionList} performances={performances}/>
+        <Sidebar selectedIndex={selectedIndex} descriptionList={descriptionList} accuracy={accuracy} rappel={rappel} precision={precision} f1_score={f1_score} performances={performances} />
       </Suspense>
       <div id="firstSection">
         <div style={{ marginTop: '1%' }} >
@@ -331,7 +352,7 @@ const Accueil = () => {
             <div id='analyser_btn'>
               <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button" sx={{ zIndex: 1 }}>
                 <Button onClick={handleClick} sx={{ width: '400px' }} >
-                  { modelNames ? modelNames[selectedIndex] : [] }
+                  {modelNames ? modelNames[selectedIndex] : []}
                 </Button>
                 {/* modelNames ? {modelNames[selectedIndex]} : [] */}
                 <Button
