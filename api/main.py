@@ -262,7 +262,6 @@ def read_root():
 # Uploader le pickle file d'un nouveau modèle
 @app.post('/addpickle_model')
 async def pickle(pickle: UploadFile = File(...)):
-    print("============================HELLLLLLLLLLLLLLLLLLLLLLLLO======================")
     with open("pickle_files/"+pickle.filename, "wb") as buffer:
         shutil.copyfileobj(pickle.file, buffer)
     return {"filename": pickle.filename}
@@ -310,6 +309,7 @@ async def get_predict(data: Inputs, db: Session = Depends(get_db)):
             sample)
         pred = model.forward(batch_padded, batch_lengths,
                              original_index, dim=1)
+                   
         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     elif model_db.saved_model_pickle == "sem_syn.pt":
