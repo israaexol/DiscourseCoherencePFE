@@ -19,7 +19,7 @@ class Model(BaseModel):
     precision : str
     accuracy : str
     rappel : str # new
-    file_name : str # new
+    saved_model_pickle : str # new
     preprocess :str # new
     hybridation : bool # new
     visibility : bool

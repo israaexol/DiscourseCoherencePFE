@@ -1,0 +1,7 @@
+Host : ec2-54-86-224-85.compute-1.amazonaws.com
+Database : dms5ftsc3838v
+User : gjfzpkxaqnkczm
+Port : 5432
+Password : 644db5ec9ba0f9a1bfb7f77366a19af01fd38f6dd1e3ad9fc10220be32919927
+URI : postgres://gjfzpkxaqnkczm:644db5ec9ba0f9a1bfb7f77366a19af01fd38f6dd1e3ad9fc10220be32919927@ec2-54-86-224-85.compute-1.amazonaws.com:5432/dms5ftsc3838v
+Heroku CLI : heroku pg:psql postgresql-flat-59109 --app lacoherencia

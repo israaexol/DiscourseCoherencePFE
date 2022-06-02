@@ -73,6 +73,7 @@ const ModifierModele = (props) => {
   }
 
   const validate = (fieldValues = state) => {
+      console.log(fieldValues)
       let temp = { ...errors }
       if ('name' in fieldValues)
           temp.name = fieldValues.name ? "" : "Ce champs est requis."
@@ -86,11 +87,13 @@ const ModifierModele = (props) => {
           temp.rappel = fieldValues.rappel ? "" : "Ce champs est requis."
       if ('F1_score' in fieldValues)
           temp.F1_score = fieldValues.F1_score ? "" : "Ce champs est requis."
+    //   if ('visibility' in fieldValues)
+      temp.visibility = ""
       setErrors({
           ...temp
       })
 
-      if (fieldValues == state)
+    //   if (fieldValues == state)
           return Object.values(temp).every(x => x == "")
   }
     
@@ -138,7 +141,7 @@ const ModifierModele = (props) => {
             "id": state.id,
             "name": state.name,
             "description": state.description,
-            "file_name": state.file_name,
+            "saved_model_pickle": state.saved_model_pickle,
             "hybridation": state.hybridation,
             "preprocess": state.preprocess,
             "F1_score": state.F1_score,
@@ -148,10 +151,12 @@ const ModifierModele = (props) => {
             "visibility" : state.visibility
           })
             .then((response) => {
+                console.log(state)
                 setSlideModif(true)
                 setModifSuccess(true)
                 console.log("modifié")
                 console.log(response);
+                console.log(state)
                 window.setTimeout( function(){
                     handleCloseConfirmer()
                     setModifSuccess(null)
@@ -172,6 +177,7 @@ const ModifierModele = (props) => {
     const continuer = e => {
         e.preventDefault();
         if(validate()){
+            console.log(state)
             setSlide(null)
             handleOpenConfirmer()
         } else {
@@ -212,10 +218,11 @@ const ModifierModele = (props) => {
             >
             <Typography style={{fontFamily:'Poppins', fontSize:'17px', padding:'20px 17px 18px', boxShadow:'none'}}>
                     Voulez-vous confirmer la modification du modèle? 
+
                 </Typography>                    
                 <DialogActions>
                 <Button onClick={onModifierModele} style={{textTransform:"capitalize", color:"#F5365C", fontFamily:'Poppins', margin:"12px 12px", fontWeight:"bold"}}>
-                    Oui
+                    Oui 
                 </Button>
                 <Button onClick={handleCloseConfirmer} style={{textTransform:"capitalize", backgroundColor:"#252834", color:"white", fontFamily:'Poppins', padding:"6px 12px", margin:"12px 20px"}}>
                     Non
@@ -288,7 +295,6 @@ const ModifierModele = (props) => {
                         <div style={{padding:"5px 40px"}}>
                           <TextField
                                 required
-                                error={errors.accuracy === "" ? false : ""}
                                 id="accuracy"
                                 variant="outlined"
                                 label="Exactitude"

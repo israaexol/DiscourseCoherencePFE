@@ -28,6 +28,7 @@ export const AjouterModele = ({handleCloseAjout}) => {
         precision: '',
         rappel: '',
         F1_score: '',
+        saved_model_pickle: '',
         visibility: true
     });
 
@@ -40,8 +41,8 @@ export const AjouterModele = ({handleCloseAjout}) => {
     const [success, setSuccess] = useState(false)
     const [data, setData] = useState(null)
     const [fileName, setFileName] = useState(null)
-    const { name, description, accuracy, precision, rappel, F1_score, preprocess } = state;
-    const values = { name, description, accuracy, precision, rappel, F1_score, preprocess };
+    const { name, description, accuracy, precision, rappel, F1_score, preprocess, saved_model_pickle } = state;
+    const values = { name, description, accuracy, precision, rappel, F1_score, preprocess, saved_model_pickle };
 
     // handle fields change
     const handleChange = input => e => {
@@ -72,8 +73,8 @@ export const AjouterModele = ({handleCloseAjout}) => {
             temp.F1_score = fieldValues.F1_score ? "" : "Ce champs est requis."
         if ('preprocess' in fieldValues)
             temp.preprocess = fieldValues.preprocess ? "" : "Ce champs est requis."
-        if (!fileName)
-            temp.file_name = "Ce champs est requis."
+        if ('saved_model_pickle' in fieldValues)
+            temp.saved_model_pickle = fieldValues.saved_model_pickle ? "" : "Ce champs est requis."
             // "hybridation": hybridation,
         setErrors({
             ...temp
@@ -149,38 +150,19 @@ export const AjouterModele = ({handleCloseAjout}) => {
 
     };
 
-    const handleFileChange = event => {
-        const fileUploaded = event.target.files[0];
-        if (fileUploaded) {
-            let dataFile = new FormData();
-            console.log(fileUploaded)
-            dataFile.append('pickle', fileUploaded);
-            // while(Object.keys(dataFile).length === 0) {
-
-                
-            //     console.log(dataFile)
-            // }
-            
-            setData(dataFile)
-            setFileName(fileUploaded.name)
-            console.log(fileName)
-        }
-    };
-
-    const uploadFile = () => {
-        axios
-        .post('http://localhost:8080/addpickle_model', data)
-        .then((res) => {
-          console.log("fichier " + fileName +" importé")
-        })
-        .catch((error) => {
-          alert(`Error: ${error.message}`)
-        })
-    }
+    // const uploadFile = () => {
+    //     axios
+    //     .post('http://localhost:8080/addpickle_model', data)
+    //     .then((res) => {
+    //       console.log("fichier " + fileName +" importé")
+    //     })
+    //     .catch((error) => {
+    //       alert(`Error: ${error.message}`)
+    //     })
+    // }
 
     const addModele = useCallback(
         async () => {
-            uploadFile()
             await axios.post('http://localhost:8080/add_model', {
                 "id": 55,
                 "name" : name,
@@ -189,7 +171,7 @@ export const AjouterModele = ({handleCloseAjout}) => {
                 "precision" : precision,
                 "accuracy" : accuracy,
                 "rappel": rappel,
-                "file_name": fileName,
+                "saved_model_pickle": saved_model_pickle,
                 "preprocess" : preprocess,
                 "hybridation": false,
                 "visibility": true
@@ -342,13 +324,21 @@ export const AjouterModele = ({handleCloseAjout}) => {
                             />
                         </div>
                         <br></br>
-                        <div className="flex-container" style={{display: "flex", flexWrap:'wrap', gap:'30px', justifyContent:'center', alignItems:'center'}}>
-                            <div>
-                                <Input ref={hiddenFileInput} onChange={handleFileChange} id="pickle-file" type="file" />
-                                <Button onClick={handleImport} style={{backgroundColor:"#007bff", textTransform:"capitalize", color:"white", fontWeight:'bold'}} variant="contained">
-                                {fileName ?? "Importer un modèle"}
-                                </Button>
-                            </div>
+                        <div style={{padding:"5px 40px"}}>
+                            <TextField
+                                required
+                                error={errors.file === "" ? false : ""}
+                                id="saved_model_pickle"
+                                label="Nom du fichier Pickle du modèle"
+                                InputLabelProps={{
+                                    shrink: true,
+                                }}
+                                variant="outlined"
+                                fullWidth='true'
+                                onChange={handleChange('saved_model_pickle')}
+                                defaultValue={values.saved_model_pickle}
+                                type='string'
+                            />
                         </div>
                         {message}
                         {successMessage}

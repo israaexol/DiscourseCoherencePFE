@@ -161,7 +161,7 @@ const Login = (props) => {
         }).then(data => {
             if (data.status == 200) {
                 window.setTimeout(function () {
-                    window.location.href = "/accueil";
+                    window.location.href = "/gestionmodeles";
                 }, 1000);
             }
             return data.json()
