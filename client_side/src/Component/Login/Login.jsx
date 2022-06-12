@@ -87,11 +87,12 @@ const PasswordTextField = styled((props) => (
 const Login = (props) => {
 
     const [username, setUsername] = useState('')
-    const [token, setToken] = useState('')
+    const [token, setToken] = useState(null)
     const [password, setPassword] = useState('')
 
     const [errMsg, seterrMsg] = useState('')
     const [slide, setSlide] = useState(null)
+    const [auth, setAuth] = useState(false)
 
     const onChangeHandler = event => {
         switch (event.target.name) {
@@ -183,6 +184,7 @@ const Login = (props) => {
         e.preventDefault();
         const token_api = await login(bodyFormData);
         setToken(token_api.access_token)
+
     }
 
     const message = (

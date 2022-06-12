@@ -3,6 +3,7 @@ import {Accueil, Apropos, Navbar} from './Component';
 import Login from './Component/Login/Login'
 import ListeModele from './Component/GestionModeles/ListeModeles/ListeModele'
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+// import { RequireToken } from "./Auth";
 
 const App = () => {
   return (

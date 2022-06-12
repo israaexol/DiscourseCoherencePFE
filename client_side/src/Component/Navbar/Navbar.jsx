@@ -6,7 +6,7 @@ const Menu = () => (
     <>
         <div className='menu_div'> <p className='link'> <a href='accueil'> Accueil </a></p> </div>
         <div className='menu_div'> <p> <a href='apropos'> À propos </a></p> </div>
-        <div className='menu_div'> <p> <a href='connexion' id="connexion"> Connexion </a></p> </div>
+        <div className='menu_div'> <p> <a href='connexion' id="connexion"> Déconnexion </a></p> </div>
     </>
 )
 const Navbar = () => {

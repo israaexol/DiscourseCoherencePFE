@@ -27,7 +27,7 @@ const Accueil = () => {
   const [open, setOpen] = React.useState(false);
   const anchorRef = React.useRef(null);
   const hiddenFileInput = React.useRef(null);
-  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [index, setIndex] = React.useState(0);
   const [isLoading, setLoading] = useState(null)
   const [isEmpty, setEmpty] = useState(true)
   const [state, setState] = useState(null)
@@ -39,6 +39,8 @@ const Accueil = () => {
   const [modeles, setModeles] = useState(null)
   const [descriptionList, setDescriptionList] = useState({})
   const [modelNames, setModelNames] = useState(null)
+  const [modelIDs, setModelIDs] = useState(null)
+  const [selectedIndex, setSelectedIndex] = useState(null)
   const [performances, setPerformances] = useState([])
   const [accuracy, setAccuracy] = useState()
   const [precision, setPrecision] = useState()
@@ -62,9 +64,12 @@ const Accueil = () => {
       if (data) {
         setModeles(data);
         const descriptions = data.map(selectProps("description"));
-        var temp = descriptions.map(Object.values);
-        setDescriptionList(temp.flat(1))
-        const tempPerf = data.map(selectProps("accuracy", "precision", "rappel", "F1_score"))
+        var temp_desc = descriptions.map(Object.values);
+        const ids = data.map(selectProps("id"));
+        var temp = ids.map(Object.values);
+        setDescriptionList(temp_desc.flat(1))
+        setModelIDs(temp.flat(1))
+        console.log(temp)
 
         const accuracy_const = data.map(selectProps("accuracy"));
         var temp_acc = accuracy_const.map(Object.values);
@@ -81,7 +86,6 @@ const Accueil = () => {
         const F1_score_const = data.map(selectProps("F1_score"));
         var temp_F1 = F1_score_const.map(Object.values);
         setF1score(temp_F1.flat(1))
-
 
         const names = data.map(selectProps("name"));
         var temp = names.map(Object.values);
@@ -105,9 +109,11 @@ const Accueil = () => {
         .then((res) => {
           const data = res.data.data
           let msg = data.score
+          console.log(msg)
           msg++
           divelement.hidden = false
           setScore(msg)
+
           setLoading(false)
         })
         .catch((error) => {
@@ -204,7 +210,8 @@ const Accueil = () => {
   };
 
   const handleMenuItemClick = (event, index) => {
-    setSelectedIndex(index);
+    setIndex(index);
+    setSelectedIndex(modelIDs[index])
     setOpen(false);
   };
 
@@ -263,7 +270,7 @@ const Accueil = () => {
   return (
     <>
       <Suspense fallback={<div>Loading...</div>}>
-        <Sidebar selectedIndex={selectedIndex} descriptionList={descriptionList} accuracy={accuracy} rappel={rappel} precision={precision} f1_score={f1_score} performances={performances} />
+        <Sidebar selectedIndex={index} descriptionList={descriptionList} accuracy={accuracy} rappel={rappel} precision={precision} f1_score={f1_score} performances={performances} />
       </Suspense>
       <div id="firstSection">
         <div style={{ marginTop: '1%' }} >
@@ -284,7 +291,7 @@ const Accueil = () => {
             </Item>
             <Item sx={{ backgroundColor: 'none', marginRight: '10%' }}>
               <Button variant="outlined" startIcon={<ThreeSixtyIcon />} onClick={handleRefresh}>
-                Rafraîchir
+                Rafraîchir 
               </Button>
             </Item>
           </Box>
@@ -352,7 +359,7 @@ const Accueil = () => {
             <div id='analyser_btn'>
               <ButtonGroup variant="contained" ref={anchorRef} aria-label="split button" sx={{ zIndex: 1 }}>
                 <Button onClick={handleClick} sx={{ width: '400px' }} >
-                  {modelNames ? modelNames[selectedIndex] : []}
+                  {modelNames ? modelNames[index] : []}
                 </Button>
                 {/* modelNames ? {modelNames[selectedIndex]} : [] */}
                 <Button
@@ -387,7 +394,7 @@ const Accueil = () => {
                           {modelNames.map((option, index) => (
                             <MenuItem
                               key={option}
-                              selected={index === selectedIndex}
+                              selected={index === index}
                               onClick={(event) => handleMenuItemClick(event, index)}
                             >
                               {option}
