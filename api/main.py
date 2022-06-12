@@ -6,8 +6,11 @@ from LSTMSemRel import LSTMSemRel
 from LSTMSentAvg import LSTMSentAvg
 from LSTMParSeq import LSTMParSeq
 from CNNPosTag import CNNPosTag
+from BERTSem import BERTSem
 from FusionSemSyn import FusionSemSyn
+from transformers import BertTokenizer, BertForSequenceClassification
 
+import torch.nn.functional as F
 import uvicorn
 import pickle
 import random
@@ -19,6 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from DocumentWithParagraphs import DocumentWithParagraphs
 from evaluation import eval_docs
 from train_neural_models import train
+from torch.utils.data import TensorDataset, random_split, DataLoader, RandomSampler, SequentialSampler
 from data_loader import *
 import sys
 import json
@@ -29,6 +33,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import string
 import pandas as pd
+from decimal import Decimal
 from tempfile import NamedTemporaryFile
 import csv
 from typing import Optional, List
@@ -106,6 +111,10 @@ idx_to_word = pickle.load(open('./pickle_files/idx_to_word.pkl', 'rb'))
 dataObj.word_embeds = embeddings
 dataObj.word_to_idx = word_to_idx
 dataObj.idx_to_word = idx_to_word
+
+#BERT tokenizer
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+
 # if(dataObj.word_embeds == None):
 #     vectors, vector_dim = dataObj.load_vectors()
 
@@ -251,6 +260,33 @@ def preprocess_data_cnnpostag(text):
     return batch_padded, batch_lengths, original_index
 
 
+def preprocess_data_bert(text):
+    input_ids = []
+    attention_masks = []
+    
+    encoded_dict = tokenizer.encode_plus(
+                        text,                      # Sentence to encode.
+                        add_special_tokens = True, # Add '[CLS]' and '[SEP]'
+                        max_length = 256,           # Pad & truncate all sentences.
+                        pad_to_max_length = True,
+                        return_attention_mask = True,   # Construct attn. masks.
+                        return_tensors = 'pt',     # Return pytorch tensors.
+                   )
+    
+    input_ids.append(encoded_dict['input_ids'])
+    attention_masks.append(encoded_dict['attention_mask'])
+    # Convert the lists into tensors.
+    input_ids = torch.cat(input_ids, dim=0)
+    attention_masks = torch.cat(attention_masks, dim=0)
+    
+    sample = TensorDataset(input_ids, attention_masks)
+    sample_loader = DataLoader(
+            sample,
+            sampler = RandomSampler(sample),
+            batch_size = 1
+        )
+    return sample_loader
+        
 # Setting up the home route
 
 
@@ -278,10 +314,17 @@ async def get_predict(data: Inputs, db: Session = Depends(get_db)):
         model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
             sample)
-        pred, avg_deg = model.forward(
+        pred, avg_deg, score_pred = model.forward(
             batch_padded, batch_lengths, original_index, dim=1)
+        print(score_pred)
         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+        
+        reg_score = list(score_pred.cpu().data.numpy())
+        print(reg_score)
+        # round(Decimal(0.3223322), 2)
+        score_reg = round(Decimal(json.dumps(abs(reg_score[0][0]), cls=NumpyArrayEncoder)),2)
+        print(score_reg)
 
     elif model_db.saved_model_pickle == "par_seq.pt":
         model = torch.load('./pickle_files/par_seq.pt')
@@ -313,7 +356,7 @@ async def get_predict(data: Inputs, db: Session = Depends(get_db)):
         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     elif model_db.saved_model_pickle == "sem_syn.pt":
-        model = pickle.load(open('./pickle_files/sem_syn.pt', 'rb'))
+        model = torch.load(open('./pickle_files/sem_syn.pt', 'rb'))
         model.eval()
         batch_padded_cnn, batch_lengths_cnn, original_index_cnn = preprocess_data_cnnpostag(
             sample)
@@ -323,7 +366,19 @@ async def get_predict(data: Inputs, db: Session = Depends(get_db)):
                              batch_lengths_cnn, original_index, weights=best_weights, dim=1)
     else:  # Bert
 
-        model = pickle.load(open('./pickle_files/sem_syn.pt', 'rb'))
+        model = torch.load(open('./pickle_files/BERTSem.pt', 'rb'), map_location=torch.device('cpu'))
+        model.eval()
+        sample_loader = preprocess_data_bert(sample)
+        for s in sample_loader: 
+            sample = tuple(t for t in s)
+        b_input_ids, b_input_mask = sample
+        pred = model.forward(b_input_ids=b_input_ids, b_input_mask=b_input_mask)
+        result = F.softmax(pred.logits, dim=1)
+        result = result.cpu().data.numpy()
+        print(result)
+        argmax = list(np.argmax(result, axis=1))
+        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+        
     return {
         "data": {
             'score': score
@@ -337,6 +392,7 @@ async def get_predict_file(niveau: int, file: UploadFile = File(...),  db: Sessi
     data = convert_csv(content_assignment)
 
     scores = []
+    scores_pred = []
     text_ids = []
     texts = []
     original_scores = []
@@ -351,11 +407,15 @@ async def get_predict_file(niveau: int, file: UploadFile = File(...),  db: Sessi
             model.eval()
             batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
                 sample)
-            pred, avg_deg = model.forward(
+            pred, avg_deg, score_pred = model.forward(
                 batch_padded, batch_lengths, original_index, dim=1)
             argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
             score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
             scores.append(score)
+            
+            preds = list(score_pred.cpu().data.numpy())
+            score_pred = json.dumps(preds[0], cls=NumpyArrayEncoder)
+            scores_pred.append(score_pred)
 
         elif model_db.saved_model_pickle == "par_seq.pt":
             model = torch.load('./pickle_files/par_seq.pt')
@@ -402,7 +462,19 @@ async def get_predict_file(niveau: int, file: UploadFile = File(...),  db: Sessi
             score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
             scores.append(score)
         else:
-            model = pickle.load(open('../model/sem_syn_cv.pkl', 'rb'))
+            model = torch.load(open('./pickle_files/BERTSem.pt', 'rb'), map_location=torch.device('cpu'))
+            model.eval()
+            sample_loader = preprocess_data_bert(sample)
+            for s in sample_loader: 
+                sample = tuple(t for t in s)
+            b_input_ids, b_input_mask = sample
+            pred = model.forward(b_input_ids=b_input_ids, b_input_mask=b_input_mask)
+            result = F.softmax(pred.logits, dim=1)
+            result = result.cpu().data.numpy()
+            print(result)
+            argmax = list(np.argmax(result, axis=1))
+            score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
+            scores.append(score)
 
     print(scores)
     return {"data":  {"scores": scores, "text_ids": text_ids, "texts": texts, "original_scores": original_scores}}
@@ -594,8 +666,8 @@ def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db
         model_to_update.preprocess = model.preprocess
     if model.hybridation:
         model_to_update.hybridation = model.hybridation
-    if model.visibility:
-        model_to_update.visibility = model.visibility
+    # if model.visibility:
+    model_to_update.visibility = model.visibility
 
     db.commit()
     return model_to_update
