@@ -48,17 +48,17 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
 
   function BasicCard({ score }) {
     let val
-    if (score >= 2) {
+    if (score > 2) {
       val = <Typography variant="h6" component="div" color="#079615">
         Score de cohérence : {score}
       </Typography>
     }
-    else if (score >= 1 && score < 2) {
+    else if (score > 1 && score <= 2) {
       val = <Typography variant="h6" component="div" color="#FF9A02">
         Score de cohérence : {score}
       </Typography>
     }
-    else if (score >= 0 && score < 1) {
+    else if (score >= 0 && score <= 1) {
       val = <Typography variant="h6" component="div" color="#E33A3A">
         Score de cohérence : {score}
       </Typography>

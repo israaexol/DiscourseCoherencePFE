@@ -16,7 +16,7 @@ const Navbar = () => {
                 < div className='navbar_logo' >
                     <img src={logo}
                         alt="logo" />
-                    La coherencia
+                    Coherencia
                 </div>
                 <div className='navbar_menu' >
                     <Menu />
