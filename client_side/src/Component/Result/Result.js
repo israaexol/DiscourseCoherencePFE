@@ -148,15 +148,15 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
           <div className='cards-key'>
             <div className='card1'>
               <div><Brightness1RoundedIcon sx={{ color: "#079615" }} /></div>
-              <p id='scoreCard'>2 - 3 (élevé)</p>
+              <p id='scoreCard'> 3 (élevé)</p>
             </div>
             <div className='card1'>
               <div><Brightness1RoundedIcon sx={{ color: "#FF9A02" }} /></div>
-              <p id='scoreCard'>1 - 2 (moyen)</p>
+              <p id='scoreCard'> 2 (moyen)</p>
             </div>
             <div className='card1'>
               <div><Brightness1RoundedIcon sx={{ color: "#E33A3A" }} /></div>
-              <p id='scoreCard'>0 - 1 (bas)</p>
+              <p id='scoreCard'> 1 (bas)</p>
             </div>
           </div>
         </>
