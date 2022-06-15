@@ -42,7 +42,7 @@ const Apropos = () => {
           <div id="description">
             <Typography sx={{ fontFamily: 'Poppins', fontSize: '18px', fontWeight: 300, color: '#00000', marginTop: '3%', marginLeft: '3%' }}>
             Notre projet de fin d'études, intitulé <b>“Évaluation de la cohérence du discours en utilisant les techniques d'apprentissage automatique”</b>, 
-            vise à étudier et évaluer la cohérence du discours à plusieurs niveaux visant chacun des caractéristiques de cohérence bien définies (Sémantique : Parenté sémantique, Syntaxique : Richesse lexicale).
+            vise à étudier et évaluer la cohérence du discours à plusieurs niveaux visant chacun des caractéristiques de cohérence bien définies (Sémantique : Parenté sémantique et information contextuelle, Syntaxique : Richesse lexicale).
             <br/>
             <br/>
             Pour ce, plusieurs modèles basés sur l'apprentissage profond (deep learning) sont proposés, conçus et implémentés. <b>La Coherencia</b> vous donne la main pour insérer votre propre texte ou série de documents, et sélectionner un modèle pour évaluer leurs cohérence selon le niveau d'analyse que vous souhaitez.
@@ -101,7 +101,7 @@ const Apropos = () => {
                     <Item sx={{ backgroundColor: '#FFF27B', borderRadius: 2, width: '125px', height: '32px' }}>
                         <div class='parent'>
                             <div class='child2'>
-                                <img src={anaconda} class='logo2'></img>
+                                <img src={anaconda} class='logo'></img>
                                 <Typography variant="caption" sx={{ fontFamily: 'Poppins', fontWeight: 500 }}>Anaconda</Typography>
                             </div>
                         </div>

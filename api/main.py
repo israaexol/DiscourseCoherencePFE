@@ -99,8 +99,10 @@ class NumpyArrayEncoder(JSONEncoder):
 
 
 # load the dictionary
-embeddings = pickle.load(open('../model/word_embeds.pkl', 'rb'))
-best_weights = pickle.load(open('../model/best_weights.pkl', 'rb'))
+embeddings = pickle.load(open('./pickle_files/word_embeds.pkl', 'rb'))
+best_weights = pickle.load(open('./pickle_files/best_weights.pkl', 'rb'))
+best_weights_fusion = pickle.load(open('./pickle_files/best_weights.pkl', 'rb'))
+
 params = {
     'vector_type': 'glove'
 }
@@ -114,10 +116,6 @@ dataObj.idx_to_word = idx_to_word
 
 #BERT tokenizer
 tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
-
-# if(dataObj.word_embeds == None):
-#     vectors, vector_dim = dataObj.load_vectors()
-
 
 def convert_csv(bytes):
     data = {}

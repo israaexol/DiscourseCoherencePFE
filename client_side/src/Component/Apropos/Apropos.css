@@ -37,3 +37,9 @@ hr {
 #encadrants {
   overflow: hidden;
 }
+
+.logo {
+  width: 23%;
+  height: 23%;
+  margin-right: 7%;
+}
