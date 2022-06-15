@@ -19,6 +19,7 @@ import ThreeSixtyIcon from '@mui/icons-material/ThreeSixty';
 import Typography from '@mui/material/Typography';
 import LooksOneIcon from '@mui/icons-material/LooksOne';
 import LooksTwoIcon from '@mui/icons-material/LooksTwo';
+
 const Sidebar = React.lazy(() => import('../Sidebar/Sidebar'));
 
 const Accueil = () => {
@@ -39,6 +40,7 @@ const Accueil = () => {
   const [modeles, setModeles] = useState(null)
   const [descriptionList, setDescriptionList] = useState({})
   const [modelNames, setModelNames] = useState(null)
+  const [visibleModels, setVisibleModels] = useState([])
   const [modelIDs, setModelIDs] = useState(null)
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [performances, setPerformances] = useState([])
@@ -63,31 +65,35 @@ const Accueil = () => {
       console.log(data)
       if (data) {
         setModeles(data);
-        const descriptions = data.map(selectProps("description"));
+        let visible = data.filter(obj => {
+          return obj.visibility === true
+        })
+        console.log(visible)
+        const descriptions = visible.map(selectProps("description"));
         var temp_desc = descriptions.map(Object.values);
-        const ids = data.map(selectProps("id"));
+        const ids = visible.map(selectProps("id"));
         var temp = ids.map(Object.values);
         setDescriptionList(temp_desc.flat(1))
         setModelIDs(temp.flat(1))
         console.log(temp)
 
-        const accuracy_const = data.map(selectProps("accuracy"));
+        const accuracy_const = visible.map(selectProps("accuracy"));
         var temp_acc = accuracy_const.map(Object.values);
         setAccuracy(temp_acc.flat(1))
 
-        const precision_const = data.map(selectProps("precision"));
+        const precision_const = visible.map(selectProps("precision"));
         var temp_prec = precision_const.map(Object.values);
         setPrecision(temp_prec.flat(1))
 
-        const rappel_const = data.map(selectProps("rappel"));
+        const rappel_const = visible.map(selectProps("rappel"));
         var temp_rapp = rappel_const.map(Object.values);
         setRappel(temp_rapp.flat(1))
 
-        const F1_score_const = data.map(selectProps("F1_score"));
+        const F1_score_const = visible.map(selectProps("F1_score"));
         var temp_F1 = F1_score_const.map(Object.values);
         setF1score(temp_F1.flat(1))
 
-        const names = data.map(selectProps("name"));
+        const names = visible.map(selectProps("name"));
         var temp = names.map(Object.values);
         setModelNames(temp.flat(1))
       }
@@ -233,10 +239,17 @@ const Accueil = () => {
     }
     else if (isLoading === true) {
       return (
+        <>
+        
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4%' }}>
-          <CircularProgress />
           <Result hidden={true} />
         </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+          <CircularProgress />
+        </Box>
+        
+        </>
+        
       )
     }
     else {

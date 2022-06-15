@@ -1,5 +1,6 @@
 import React from 'react'
 import Card from '@mui/material/Card';
+import Box from '@mui/material/Box';
 import CardActions from '@mui/material/CardActions';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -17,6 +18,7 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import Looks3Icon from '@mui/icons-material/Looks3';
 
 const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, table }) => {
   const [displayTable , setDisplay] = React.useState(false);
@@ -36,6 +38,22 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
     }
     
   };
+
+  function Item(props) {
+    const { sx, ...other } = props;
+    return (
+      <Box
+        sx={{
+          p: 1,
+          bgcolor: 'transparent',
+          color: (theme) => (theme.palette.mode === 'dark' ? 'grey.300' : 'grey.800'),
+          fontSize: '0.875rem',
+          ...sx,
+        }}
+        {...other}
+      />
+    );
+  }
 
   function Score({ scoreResult }) {
     switch (scoreResult) {
@@ -219,9 +237,27 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
 
   }
   return (
-    <div id='evalSection' hidden={hidden}>
-      <Render chart={chart} />
-    </div>
+    <>
+      <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            position: 'relative',
+            width: '75%',
+            height: '60px',
+            margin: '10px 133px'
+          }}
+        >
+          <Item sx={{ backgroundColor: 'none', height: '50px', width: '100%' }}>
+            <Typography variant="h5" sx={{ fontFamily: 'Poppins', fontWeight: 500, color: '#5885FB' }}><Looks3Icon sx={{ margin: '0 18px', height: '4%', width: '4%', color: "#ffab00" }} />Visualisation des résultats</Typography>
+          </Item>
+        </Box>
+      <div id='evalSection' hidden={hidden}>
+        <Render chart={chart} />
+      </div>
+    </>
+    
   )
 }
 
