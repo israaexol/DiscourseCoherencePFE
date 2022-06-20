@@ -101,7 +101,7 @@ class NumpyArrayEncoder(JSONEncoder):
 # load the dictionary
 embeddings = pickle.load(open('./pickle_files/word_embeds.pkl', 'rb'))
 best_weights = pickle.load(open('./pickle_files/best_weights.pkl', 'rb'))
-best_weights_fusion = pickle.load(open('./pickle_files/best_weights.pkl', 'rb'))
+best_weights_fusion = pickle.load(open('./pickle_files/best_weights_fusion.pkl', 'rb')) #best_weights_fusion.pkl
 
 params = {
     'vector_type': 'glove'
@@ -312,17 +312,17 @@ async def get_predict(data: Inputs, db: Session = Depends(get_db)):
         model.eval()
         batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
             sample)
-        pred, avg_deg, score_pred = model.forward(
+        pred, score_pred = model.forward(
             batch_padded, batch_lengths, original_index, dim=1)
-        print(score_pred)
+        #print(score_pred)
         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
         
-        reg_score = list(score_pred.cpu().data.numpy())
-        print(reg_score)
+        #reg_score = list(score_pred.cpu().data.numpy())
+        #print(reg_score)
         # round(Decimal(0.3223322), 2)
-        score_reg = round(Decimal(json.dumps(abs(reg_score[0][0]), cls=NumpyArrayEncoder)),2)
-        print(score_reg)
+        #score_reg = round(Decimal(json.dumps(abs(reg_score[0][0]), cls=NumpyArrayEncoder)),2)
+        #print(score_reg)
 
     elif model_db.saved_model_pickle == "par_seq.pt":
         model = torch.load('./pickle_files/par_seq.pt')
@@ -340,6 +340,7 @@ async def get_predict(data: Inputs, db: Session = Depends(get_db)):
             sample)
         pred = model.forward(batch_padded, batch_lengths,
                              original_index, weights=best_weights, dim=1)
+        print(pred)
         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     elif model_db.saved_model_pickle == "cnn_postag.pt":
@@ -354,14 +355,17 @@ async def get_predict(data: Inputs, db: Session = Depends(get_db)):
         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     elif model_db.saved_model_pickle == "sem_syn.pt":
-        model = torch.load(open('./pickle_files/sem_syn.pt', 'rb'))
+        model = torch.load('./pickle_files/sem_syn.pt')
         model.eval()
         batch_padded_cnn, batch_lengths_cnn, original_index_cnn = preprocess_data_cnnpostag(
             sample)
         batch_padded_semrel, batch_lengths_semrel, original_index_semrel = preprocess_data_parseq(
             sample)
         pred = model.forward(batch_padded_semrel, batch_padded_cnn, batch_lengths_semrel,
-                             batch_lengths_cnn, original_index, weights=best_weights, dim=1)
+                             batch_lengths_cnn, original_index_semrel, weights=best_weights_fusion, dim=1)
+        print(pred)
+        argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
+        score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
     else:  # Bert
 
         model = torch.load(open('./pickle_files/BERTSem.pt', 'rb'), map_location=torch.device('cpu'))
@@ -477,114 +481,6 @@ async def get_predict_file(niveau: int, file: UploadFile = File(...),  db: Sessi
     print(scores)
     return {"data":  {"scores": scores, "text_ids": text_ids, "texts": texts, "original_scores": original_scores}}
 
-
-# @app.post("/evaluate")
-# async def get_predict(data: Inputs, db: Session = Depends(get_db)):
-#     model_id = data.selectedIndex
-#     sample = data.text
-
-#     model_db = get_one_model(model_id, db)
-#     print("-----------------------------------------------------------")
-#     print(model_db)
-#     file_name = model_db.file_name
-#     print(file_name)
-#     process_level = model_db.preprocess
-#     model = torch.load(
-#         './pickle_files/'+file_name)
-#     model.eval()
-#     grid_search = False
-#     if process_level == "sémantique phrases":  # sentavg + Bert
-#         batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
-#             sample)
-#     elif process_level == "sémantique paragraphes":  # parseq + semrel
-#         batch_padded, batch_lengths, original_index = preprocess_data_parseq(
-#             sample)
-#         if file_name == "sem_rel.pt":
-#             grid_search = True
-
-#     elif process_level == "syntaxique":  # cnnpostag
-#         batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
-#             sample)
-#     else:  # fusionsemsyn
-#         batch_padded_postag, batch_lengths_postag, original_index_postag = preprocess_data_cnnpostag(
-#             sample)
-#         batch_padded_sem, batch_lengths_sem, original_index_sem = preprocess_data_parseq(
-#             sample)
-#         grid_search = True
-
-#     if model_db.hybridation== True:  # semrel + fusion_semsyn
-
-#         pred = model.forward(batch_padded, batch_lengths,original_index, weights=best_weights, dim=1) #dim=1????
-#     else:
-#         pred = model.forward(batch_padded, batch_lengths, original_index, dim=1)# sentavg + parseq + cnnpostag
-
-#     argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-#     score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-#     return {
-#         "data": {
-#             'score': score
-#         }
-#     }
-
-
-# @app.post("/uploadfile")
-# async def get_predict_file(model_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-#     content_assignment = await file.read()
-#     data = convert_csv(content_assignment)
-
-#     scores = []
-#     text_ids = []
-#     texts = []
-#     original_scores = []
-
-#     model_db = get_one_model(model_id, db)
-#     file_name = model_db.file_name
-#     process_level = model_db.preprocess
-
-#     model = torch.load(
-#         './pickle_files/'+file_name)
-#     model.eval()
-#     grid_search = False
-#     for i in range(len(data)):
-#         sample = data[i]['text']
-#         text_ids.append(data[i]['text_id'])
-#         texts.append(data[i]['text'])
-#         original_scores.append(data[i]['labelA'])
-#         if process_level == "sémantique phrases":  # sentavg + Bert
-#             batch_padded, batch_lengths, original_index = preprocess_data_sentavg(
-#                 sample)
-#         elif process_level == "sémantique paragraphes":  # parseq + semrel
-#             batch_padded, batch_lengths, original_index = preprocess_data_parseq(
-#                 sample)
-#             if file_name == "sem_rel.pt":
-#                 grid_search = True
-
-#         elif process_level == "syntaxique":  # cnnpostag
-#             batch_padded, batch_lengths, original_index = preprocess_data_cnnpostag(
-#                 sample)
-#         else:  # fusionsemsyn
-#             batch_padded_postag, batch_lengths_postag, original_index_postag = preprocess_data_cnnpostag(
-#                 sample)
-#             batch_padded_sem, batch_lengths_sem, original_index_sem = preprocess_data_parseq(
-#                 sample)
-#             grid_search = True
-
-#         if grid_search == True:  # semrel + fusion_semsyn
-#             pred = model.forward(batch_padded, batch_lengths,
-#                                  original_index, weights=best_weights, dim=1)
-#         else:
-#             pred = model.forward(  # sentavg + parseq + cnnpostag
-#                 batch_padded, batch_lengths, original_index, dim=1)
-
-#         argmax = list(np.argmax(pred.cpu().data.numpy(), axis=1))
-#         score = json.dumps(argmax[0], cls=NumpyArrayEncoder)
-#         scores.append(score)
-#     return {"data":  {"scores": scores, "text_ids": text_ids, "texts": texts, "original_scores": original_scores}}
-
-
-# Retourner les liste de tous les modèles avec les détails pour l'interface admin
-
-
 @app.get('/models/', response_model=List[SchemaModel], status_code=200)
 # token: str = Depends(oauth2_scheme)
 def get_all_models(db: Session = Depends(get_db)):
@@ -643,7 +539,7 @@ def add_model(model: SchemaModel, db: Session = Depends(get_db)):
 # Modifier les paramètres d'un modèle
 
 
-@app.put("/update_model/{model_id}", response_model=SchemaModel)
+@app.put("/update_model/{model_id}",response_model=SchemaModel)
 # token: str = Depends(oauth2_scheme)
 def update_model(model_id: int, model: SchemaModel, db: Session = Depends(get_db)):
     model_to_update = db.query(ModelModel).filter(

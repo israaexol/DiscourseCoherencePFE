@@ -94,9 +94,6 @@ const Result = ({ hidden, scoreResult, isEmpty, chartData, chart, chartLength, t
               {val}
             </Typography>
           </CardContent>
-          <CardActions sx={{ position: 'relative' }}>
-            <Button size="small">Voir plus</Button>
-          </CardActions>
         </Card>
       </div>
     );

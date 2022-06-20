@@ -139,7 +139,7 @@ def eval_docs(model, loss_fn, eval_data, labels, data_obj, params):
     if params["model_type"] == 'sem_rel' or params['model_type']=='cnn_pos_tag':
         return accuracy, loss
     else:
-        return accuracy, loss, eval_pred, global_avg_deg_test
+        return accuracy, loss, eval_pred
 
 def eval_docs_rank(model, eval_docs, data_obj, params):
     num_correct = 0

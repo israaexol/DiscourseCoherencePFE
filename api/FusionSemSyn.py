@@ -267,5 +267,12 @@ class FusionSemSyn(nn.Module):
         coherence_pred_CNNTensor = coherence_pred_CNN
         
         #Prédiction finale à partir de celles des deux niveaux
-        return coherence_pred_sent, coherence_pred_par, coherence_pred_CNN
+
+        coherence_pred_sent = torch.mul(coherence_pred_sentTensor, weights[0])
+        coherence_pred_par = torch.mul(coherence_pred_parTensor, weights[1])
+        coherence_pred_CNN = torch.mul(coherence_pred_CNNTensor, weights[2])
+
+        final_prediction = coherence_pred_sent.add(coherence_pred_par)
+        final_prediction = final_prediction.add(coherence_pred_CNN)
+        return final_prediction
            

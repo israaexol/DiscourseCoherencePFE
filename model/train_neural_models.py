@@ -132,7 +132,9 @@ def train(params, training_docs, test_docs, data, model):
                 else:
                     loss = loss_fn(pred_coherence, Variable(LongTensor(orig_batch_labels))) 
             else: 
-                pred_coherence, avg_deg_train= model(batch_padded, batch_lengths, original_index)
+                pred_coherence = model(batch_padded, batch_lengths, original_index)
+                #pred_coherence, avg_deg_train= model(batch_padded, batch_lengths, original_index)
+
                 if params['task'] == 'score_pred':
                     loss = loss_fn(pred_coherence, Variable(FloatTensor(orig_batch_labels)))
                 else:
@@ -150,7 +152,7 @@ def train(params, training_docs, test_docs, data, model):
                 test_accuracy, test_loss = eval_docs(model, loss_fn, test_data, test_labels, data, params)                                
             elif params['model_type'] == 'sent_avg' or params['model_type'] == 'par_seq':
                 test_accuracy, test_loss, global_eval_pred = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
-                #test_accuracy, test_loss, global_eval_pred, #global_avg_deg_test = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
+                #test_accuracy, test_loss, global_eval_pred, global_avg_deg_test = eval_docs(model, loss_fn, test_data, test_labels, data, params) 
 
             print("Test loss: %0.3f" % test_loss)
             if params['task'] == 'score_pred':
@@ -464,7 +466,7 @@ def train_fusion(params, data_docs_cnn, data_docs_sem, data, model_fusion):
             if test_accuracy > best_test_acc:
                 best_test_acc = test_accuracy
                 # save best model
-                torch.save(model_fusion.state_dict(), params['model_dir'] + '/' + params['model_name'] + '_best.pt')
+                torch.save(model_fusion, params['model_dir'] + '/' + params['model_name'] + '_best.pt')
                 print('saved model ' + params['model_dir'] + '/' + params['model_name'] + '_best')
             print()
             fold += 1
