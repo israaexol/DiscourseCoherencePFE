@@ -10,8 +10,7 @@ Les dépendances de ce code, écrit en Python, sont:
 
 ## Dataset utilisé
 
-Le corpus de GCDC proposé par (Lai et Tetreault, 2018) et disponible sur demande via (https://github.com/aylai/GCDC-corpus)
-Pour la configuration de validation croisée, les 4 domaines (Yahoo, Yelp, Clinton et Enron, le training et le test à la fois) ont été jumlés dans un seul corpus global
+Le corpus de GCDC proposé par (Lai et Tetreault, 2018) et disponible sur demande via (https://github.com/aylai/GCDC-corpus).
 
 ## Évaluation des modèles
 
